@@ -19,6 +19,8 @@ object MandelbrotApp extends SimpleSwingApplication {
     val reMax: Double = 1
     val imMin: Double = -1
     val imMax: Double = 1
+    // iteration
+    val maxIter = 500
   }
 
   import Config._
@@ -29,7 +31,7 @@ object MandelbrotApp extends SimpleSwingApplication {
     preferredSize = (xMax, yMax)
     val bufferedImage: BufferedImage = new BufferedImage(xMax, yMax, BufferedImage.TYPE_INT_ARGB)
 
-    val mandelbrot = Mandelbrot(500)
+    val mandelbrot = Mandelbrot(maxIter)
     focusable = true
     listenTo(this)
 
@@ -39,9 +41,8 @@ object MandelbrotApp extends SimpleSwingApplication {
       y <- 0 until yMax
       val im = scaleIm(y)
     } {
-      if (mandelbrot(new Complex(re, im))) {
-        bufferedImage.setRGB(x, y, blackRgb)
-      }
+      val iter = mandelbrot(new Complex(re, im))
+      bufferedImage.setRGB(x, y, getColor(iter))
     }
 
     reactions += {
@@ -58,6 +59,15 @@ object MandelbrotApp extends SimpleSwingApplication {
     title = "Mandelbrot set"
     contents = ui
   }
+  
+  def getColor(i:Int):Int={
+      if (i == 0) return Color.BLACK.getRGB
+      val iter = maxIter - i 
+      val c=3*math.log(iter)/math.log(maxIter-1.0)
+      if(c<1) new Color((255*c).toInt, 0, 0).getRGB
+      else if(c<2) new Color(255, (255*(c-1)).toInt, 0).getRGB
+      else new Color(255, 255, (255*(c-2)).toInt).getRGB
+   }
 
   def scale(n: Int)(maxN: Int, from: Double, to: Double): Double = n * (to - from) / maxN + from
     //(n / (maxN / (to - from))) + from

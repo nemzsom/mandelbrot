@@ -1,15 +1,16 @@
 package hu.n.zs.mandelbrot
 
 object Mandelbrot {
-  type Mb = Complex => Boolean
+  type Mb = Complex => Int
   
-  def contains(i: Int, z: Complex, c: Complex): Boolean = {
-      if (i < 0) true
-      else if (z.escaped) false
-      else contains(i-1, z*z + c, c)
+  def contains(iter: Int, c: Complex): Int = {
+    def loop(i: Int, z: Complex): Int =
+      if (i == 0 || z.escaped) i
+      else loop(i-1, z*z + c)
+    loop(iter, Complex(0, 0))
   }
   
-  def apply(iter: Int): Mb = contains(iter, Complex(0, 0), _)
+  def apply(iter: Int): Mb = contains(iter, _)
   
   implicit class ComplexOps(c: Complex) {
 
