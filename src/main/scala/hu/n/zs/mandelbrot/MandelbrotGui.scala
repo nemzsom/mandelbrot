@@ -12,15 +12,15 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   object Config {
     // picture pane
-    val xMax: Int = 1024
-    val yMax: Int = 768
+    val xMax: Int = 1000
+    val yMax: Int = 1000
     // complex pane
-    val reMin: Double = -2.5
-    val reMax: Double = 1
-    val imMin: Double = -1
-    val imMax: Double = 1
+    val reMin: Double = -2
+    val reMax: Double = 2
+    val imMin: Double = -2
+    val imMax: Double = xMax/yMax*(reMax - reMin) + imMin
     // iteration
-    val maxIter = 500
+    val maxIter = 20
   }
 
   import Config._
@@ -37,9 +37,9 @@ object MandelbrotApp extends SimpleSwingApplication {
 
     for {
       x <- 0 until xMax
-      val re = scaleRe(x)
+      val im = scaleIm(x)
       y <- 0 until yMax
-      val im = scaleIm(y)
+      val re = scaleRe(y)
     } {
       val iter = mandelbrot(new Complex(re, im))
       bufferedImage.setRGB(x, y, getColor(iter))
@@ -70,9 +70,8 @@ object MandelbrotApp extends SimpleSwingApplication {
    }
 
   def scale(n: Int)(maxN: Int, from: Double, to: Double): Double = n * (to - from) / maxN + from
-    //(n / (maxN / (to - from))) + from
 
-  def scaleRe(n: Int) = scale(n)(xMax, reMin, reMax)
-  def scaleIm(n: Int) = scale(n)(yMax, imMin, imMax)
+  def scaleRe(n: Int) = scale(n)(yMax, reMin, reMax)
+  def scaleIm(n: Int) = scale(n)(xMax, imMin, imMax)
 
 }

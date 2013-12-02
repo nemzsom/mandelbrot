@@ -14,6 +14,6 @@ object Mandelbrot {
   
   implicit class ComplexOps(c: Complex) {
 
-    def escaped: Boolean = math.abs(c.re*c.re + c.im*c.im) > 2*2
+    def escaped: Boolean = c.re*c.re + c.im*c.im > 2*2
   }
 }
