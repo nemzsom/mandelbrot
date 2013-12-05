@@ -45,6 +45,7 @@ case class Complex(re: Double, im: Double) extends Ordered[Complex] {
 object Complex {
   // Constants
   val i = new Complex(0, 1)
+  val ZERO = new Complex(0, 0)
 
   // Factory methods
   def apply(re: Double) = new Complex(re)

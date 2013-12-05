@@ -5,9 +5,9 @@ object Mandelbrot {
   
   def contains(iter: Int, c: Complex): Int = {
     def loop(i: Int, z: Complex): Int =
-      if (i == 0 || z.escaped) i
-      else loop(i-1, z*z + c)
-    loop(iter, Complex(0, 0))
+      if (i == iter || z.escaped) i
+      else loop(i+1, z*z + c)
+    loop(0, Complex(0, 0))
   }
   
   def apply(iter: Int): Mb = contains(iter, _)
