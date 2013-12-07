@@ -13,18 +13,18 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   object State {
     // picture pane
-    var xMax: Int = 200
-    var yMax: Int = 20
+    var xMax: Int = 1000
+    var yMax: Int = 1000
     // complex pane
     var reMin: Double = -2
     var reMax: Double = 2
     var imMin: Double = -2
-    var imMax: Double = 10
+    var imMax: Double = 2
     // iteration
-    var maxIter = 10
+    var maxIter = 1000
     def refresh: Unit = {
       imMax = xMax.toDouble/yMax*(reMax - reMin) + imMin
-      println(s"refresh. imMax: $imMax; xMax: $xMax, yMax: $yMax, reMax: $reMax, reMin: $reMin, imMin: $imMin")
+      //println(s"refresh. imMax: $imMax; xMax: $xMax, yMax: $yMax, reMax: $reMax, reMin: $reMin, imMin: $imMin")
     }
     refresh
   }
@@ -55,13 +55,13 @@ object MandelbrotApp extends SimpleSwingApplication {
     
     def resize: Unit = {
       if (xMax != size.width || yMax != size.height) {
-        val (drawX, drawY) = calculateAspectRatioFit(xMax, yMax, size.width, size.height)
+        //val (drawX, drawY) = calculateAspectRatioFit(xMax, yMax, size.width, size.height)
         val newImg = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
         val graphics = newImg.createGraphics
         graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
         graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        graphics.drawImage(bufferedImage, 0, 0, drawX, drawY, null)
+        graphics.drawImage(bufferedImage, 0, 0, xMax, yMax, null)
         bufferedImage = newImg
         repaint
         xMax = size.width
@@ -72,12 +72,13 @@ object MandelbrotApp extends SimpleSwingApplication {
       }
     }
     
-    def calculateAspectRatioFit(srcWidth: Double, srcHeight: Double, maxWidth: Double, maxHeight: Double): (Int, Int) = {
+    /*def calculateAspectRatioFit(srcWidth: Double, srcHeight: Double, maxWidth: Double, maxHeight: Double): (Int, Int) = {
         val ratio = math.min(maxWidth / srcWidth, maxHeight / srcHeight);
         ((srcWidth*ratio).toInt, (srcHeight*ratio).toInt)
-    }
+    }*/
     
     def updateImage: Unit = {
+      var time = System.nanoTime
       for {
         x <- 0 until xMax
         val im = scaleIm(x)
@@ -87,6 +88,8 @@ object MandelbrotApp extends SimpleSwingApplication {
         val iter = mandelbrot(new Complex(re, im))
         bufferedImage.setRGB(x, y, getColor(iter))
       }
+      time = System.nanoTime - time
+      println(s"render time: ${time / 1000000} ms")
     }
   }
 
