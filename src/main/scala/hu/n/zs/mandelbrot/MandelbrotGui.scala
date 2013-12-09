@@ -3,7 +3,7 @@ package hu.n.zs.mandelbrot
 import scala.swing.Swing._
 import scala.swing._
 import scala.swing.event._
-import java.awt.{ Color, Graphics2D, Point }
+import java.awt.{ Color, Graphics2D }
 import java.awt.image.BufferedImage
 import java.awt.image.BufferedImageOp
 import scala.util.Try
@@ -13,20 +13,23 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   object State {
     // picture pane
-    var xMax: Int = 1000
+    /*var xMax: Int = 1000
     var yMax: Int = 1000
     // complex pane
     var reMin: Double = -2
     var reMax: Double = 2
     var imMin: Double = -2
-    var imMax: Double = 2
+    var imMax: Double = 2*/
     // iteration
-    var maxIter = 1000
-    def refresh: Unit = {
+    var maxIter = 20
+    /*def refresh: Unit = {
       imMax = xMax.toDouble/yMax*(reMax - reMin) + imMin
       //println(s"refresh. imMax: $imMax; xMax: $xMax, yMax: $yMax, reMax: $reMax, reMin: $reMin, imMin: $imMin")
-    }
-    refresh
+    }*/
+    var area = Area.initialize(Point(0, 0), Point(160, 160), Complex(-2, -2), 2)
+    println(area)
+    println(s"width: ${area.width}, height: ${area.height}")
+    //refresh
   }
 
   import State._
@@ -34,8 +37,8 @@ object MandelbrotApp extends SimpleSwingApplication {
   lazy val ui = new Panel {
 
     val blackRgb = Color.BLACK.getRGB
-    preferredSize = (xMax, yMax)
-    var bufferedImage: BufferedImage = new BufferedImage(xMax, yMax, BufferedImage.TYPE_INT_ARGB)
+    preferredSize = (area.width, area.height)
+    var bufferedImage: BufferedImage = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_ARGB)
 
     val mandelbrot = Mandelbrot(maxIter)
     focusable = true
@@ -50,42 +53,29 @@ object MandelbrotApp extends SimpleSwingApplication {
 
     override def paintComponent(g: Graphics2D) = {
       super.paintComponent(g)
-      g.drawImage(bufferedImage, 0, 0, xMax, yMax, null)
+      g.drawImage(bufferedImage, 0, 0, area.width, area.height, null)
     }
     
     def resize: Unit = {
-      if (xMax != size.width || yMax != size.height) {
-        //val (drawX, drawY) = calculateAspectRatioFit(xMax, yMax, size.width, size.height)
+      /*if (area.pMax.x != size.width || area.pMax.y != size.height) {
         val newImg = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
         val graphics = newImg.createGraphics
         graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
         graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        graphics.drawImage(bufferedImage, 0, 0, xMax, yMax, null)
+        graphics.drawImage(bufferedImage, 0, 0, area.pMax.x, area.pMax.y, null)
         bufferedImage = newImg
         repaint
-        xMax = size.width
-        yMax = size.height
-        State.refresh
         updateImage
         repaint
-      }
+      }*/
     }
-    
-    /*def calculateAspectRatioFit(srcWidth: Double, srcHeight: Double, maxWidth: Double, maxHeight: Double): (Int, Int) = {
-        val ratio = math.min(maxWidth / srcWidth, maxHeight / srcHeight);
-        ((srcWidth*ratio).toInt, (srcHeight*ratio).toInt)
-    }*/
     
     def updateImage: Unit = {
       var time = System.nanoTime
-      for {
-        x <- 0 until xMax
-        val im = scaleIm(x)
-        y <- 0 until yMax
-        val re = scaleRe(y)
-      } {
-        val iter = mandelbrot(new Complex(re, im))
+      area.foreach { case (Point(x, y), complex) =>
+        //println(s"x: $x; y: $y; comp: $complex")
+        val iter = mandelbrot(complex)
         bufferedImage.setRGB(x, y, getColor(iter))
       }
       time = System.nanoTime - time
@@ -105,10 +95,4 @@ object MandelbrotApp extends SimpleSwingApplication {
       else if(c<2) new Color(255, (255*(c-1)).toInt, 0).getRGB
       else new Color(255, 255, (255*(c-2)).toInt).getRGB
    }
-
-  def scale(n: Int)(maxN: Int, from: Double, to: Double): Double = n * (to - from) / maxN + from
-
-  def scaleRe(n: Int) = scale(n)(yMax, reMin, reMax)
-  def scaleIm(n: Int) = scale(n)(xMax, imMin, imMax)
-
 }
