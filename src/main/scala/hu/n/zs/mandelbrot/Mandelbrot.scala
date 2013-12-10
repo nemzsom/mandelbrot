@@ -1,6 +1,7 @@
 package hu.n.zs.mandelbrot
 
 import math.{sqrt, pow}
+import scala.annotation.tailrec
 
 object Mandelbrot {
   type Mb = Complex => Int
@@ -16,11 +17,11 @@ object Mandelbrot {
   def preCheck(c: Complex): Boolean = {
     val q = pow(c.re - 0.25, 2) + pow(c.im, 2)
     q*(q + (c.re - 0.25)) < pow(c.im, 2) / 4 ||
-    pow(c.re + 1, 2) + pow(c.im, 2) < 0.0625 
+    pow(c.re + 1, 2) + pow(c.im, 2) < 0.0625
   }
   
   def iterate(iter: Int, c: Complex): Int = {
-    def loop(i: Int, z: Complex): Int =
+    @tailrec def loop(i: Int, z: Complex): Int =
       if (i == iter || z.escaped) i
       else loop(i+1, z*z + c)
     loop(0, Complex.ZERO)

@@ -12,24 +12,9 @@ import java.awt.RenderingHints
 object MandelbrotApp extends SimpleSwingApplication {
 
   object State {
-    // picture pane
-    /*var xMax: Int = 1000
-    var yMax: Int = 1000
-    // complex pane
-    var reMin: Double = -2
-    var reMax: Double = 2
-    var imMin: Double = -2
-    var imMax: Double = 2*/
-    // iteration
     var maxIter = 20
-    /*def refresh: Unit = {
-      imMax = xMax.toDouble/yMax*(reMax - reMin) + imMin
-      //println(s"refresh. imMax: $imMax; xMax: $xMax, yMax: $yMax, reMax: $reMax, reMin: $reMin, imMin: $imMin")
-    }*/
-    var area = Area.initialize(Point(0, 0), Point(160, 160), Complex(-2, -2), 2)
+    var area = Area.initialize(Point(0, 0), Point(200, 200), Complex(-2, -2), 2)
     println(area)
-    println(s"width: ${area.width}, height: ${area.height}")
-    //refresh
   }
 
   import State._
@@ -57,18 +42,12 @@ object MandelbrotApp extends SimpleSwingApplication {
     }
     
     def resize: Unit = {
-      /*if (area.pMax.x != size.width || area.pMax.y != size.height) {
-        val newImg = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
-        val graphics = newImg.createGraphics
-        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
-        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        graphics.drawImage(bufferedImage, 0, 0, area.pMax.x, area.pMax.y, null)
-        bufferedImage = newImg
-        repaint
+      if (area.width != size.width || area.height != size.height) {
+        area = area.resize(size.width - 1, size.height - 1)
+        bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
         updateImage
         repaint
-      }*/
+      }
     }
     
     def updateImage: Unit = {

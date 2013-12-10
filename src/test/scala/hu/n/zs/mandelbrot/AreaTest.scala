@@ -38,5 +38,18 @@ class AreaTest extends FunSuite {
     val scale = Area.calcScale(0, 10, 0, 1)
     assert(scale === 0.1)
   }
+  
+  test("corners") {
+    assert(area.topLeft === (Point(0, 0), Complex(0, 0)))
+    assert(area.topRight === (Point(1, 0), Complex(0, 0.5)))
+    assert(area.bottomLeft === (Point(0, 2), Complex(1, 0)))
+    assert(area.bottomRight === (Point(1, 2), Complex(1, 0.5)))
+  }
+  
+  test("resize") {
+    val b = area resize Point(2, 1)
+    assert(b.topLeft === (Point(0, 0), Complex(0, 0)))
+    assert(b.bottomRight === (Point(2, 1), Complex(0.5, 1)))
+  }
 
 }
