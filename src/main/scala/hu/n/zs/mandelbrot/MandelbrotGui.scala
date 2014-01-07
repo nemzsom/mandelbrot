@@ -12,8 +12,8 @@ import java.awt.RenderingHints
 object MandelbrotApp extends SimpleSwingApplication {
 
   object State {
-    var maxIter = 20
-    var area = Area.initialize(Point(0, 0), Point(200, 200), Complex(-2, -2), 2)
+    var maxIter = 400
+    var area = Area.initialize(Point(0, 0), 120, 120, Complex(-2, -2), 2)
     println(area)
   }
 
@@ -24,14 +24,27 @@ object MandelbrotApp extends SimpleSwingApplication {
     val blackRgb = Color.BLACK.getRGB
     preferredSize = (area.width, area.height)
     var bufferedImage: BufferedImage = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_ARGB)
+    var draggedFrom: Point = (0, 0)
 
     val mandelbrot = Mandelbrot(maxIter)
     focusable = true
-    listenTo(this)
+    listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
 
     updateImage
 
     reactions += {
+      case e: MousePressed => draggedFrom = e.point; println(s"clicked: $draggedFrom")
+      case e: MouseDragged =>
+        val diffX = e.point.x - draggedFrom.x
+        val diffY = e.point.y - draggedFrom.y
+        draggedFrom = e.point
+        area = area.move(diffX, diffY)
+        updateImage
+        repaint
+      case e: MouseWheelMoved =>
+        area = area zoom (1 - e.rotation * 0.25, e.point)
+        updateImage
+        repaint
       case _: UIElementResized => resize
       case _: FocusLost => repaint()
     }
@@ -43,7 +56,7 @@ object MandelbrotApp extends SimpleSwingApplication {
     
     def resize: Unit = {
       if (area.width != size.width || area.height != size.height) {
-        area = area.resize(size.width - 1, size.height - 1)
+        area = area.resize(size.width, size.height)
         bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
         updateImage
         repaint

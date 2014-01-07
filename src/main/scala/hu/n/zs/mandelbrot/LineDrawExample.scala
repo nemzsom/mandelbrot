@@ -16,7 +16,7 @@ object LineDraw extends SimpleSwingApplication {
     preferredSize = (640, 480)
     val lineRGB = Color.black.getRGB
     var bufferedImage: BufferedImage = new BufferedImage(640, 480, BufferedImage.TYPE_INT_ARGB)
-    var actPoint: Point = new Point()
+    var actPoint: java.awt.Point = new java.awt.Point()
 
     focusable = true
     listenTo(mouse.clicks, mouse.moves, keys, this)
@@ -32,7 +32,7 @@ object LineDraw extends SimpleSwingApplication {
       case _: FocusLost => repaint
     }
 
-    def lineTo(p: Point) {
+    def lineTo(p: java.awt.Point) {
       val graphics = bufferedImage.createGraphics()
       graphics.setColor(Color.black)
       graphics.drawLine(actPoint.x, actPoint.y, p.x, p.y)
@@ -40,7 +40,7 @@ object LineDraw extends SimpleSwingApplication {
       repaint()
     }
 
-    def moveTo(p: Point) {
+    def moveTo(p: java.awt.Point) {
       actPoint = p
       //bufferedImage.setRGB(p.x, p.y, lineRGB)
       //repaint()

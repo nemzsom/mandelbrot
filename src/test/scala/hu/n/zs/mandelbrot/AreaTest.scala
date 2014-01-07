@@ -8,7 +8,15 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class AreaTest extends FunSuite {
   
-  val area = Area(Point(0, 0), Point(1, 2), Complex(0, 0), 0.5)
+  /**
+   *     0        1
+   *   __________________
+   * 0 |0+0i  , 0+0.5i  |
+   * 1 |0.5+0i, 0.5+0.5i|
+   * 2 |1+0i  , 1+0.5i  |
+   *   ------------------
+   */
+  val area = Area(Point(0, 0), 2, 3, Complex(0, 0), 0.5)
 
   test("iterator") {
     val points = List(
@@ -22,7 +30,7 @@ class AreaTest extends FunSuite {
   }
   
   test("initialize") {
-    val a = Area.initialize(Point(0, 0), Point(1, 2), Complex(0, 0), 1)
+    val a = Area.initialize(Point(0, 0), 2, 3, Complex(0, 0), 1)
     assert(a === area)
   }
   
@@ -39,6 +47,10 @@ class AreaTest extends FunSuite {
     assert(scale === 0.1)
   }
   
+  test("complexAt") {
+    assert(area.complexAt(1, 2) === Complex(1, 0.5))
+  }
+  
   test("corners") {
     assert(area.topLeft === (Point(0, 0), Complex(0, 0)))
     assert(area.topRight === (Point(1, 0), Complex(0, 0.5)))
@@ -47,9 +59,22 @@ class AreaTest extends FunSuite {
   }
   
   test("resize") {
-    val b = area resize Point(2, 1)
+    val b = area resize (3, 2)
     assert(b.topLeft === (Point(0, 0), Complex(0, 0)))
     assert(b.bottomRight === (Point(2, 1), Complex(0.5, 1)))
+  }
+  
+  test("move") {
+    val moved = area move (1, 2)
+    assert(moved.topLeft === (Point(0, 0), Complex(-1, -0.5)))
+    assert(moved.bottomRight === (Point(1, 2), Complex(0, 0)))
+  }
+  
+  test("zoom") {
+    val zoomed = area zoom (2, (1, 1))
+    assert(zoomed.complexAt(1, 1) === Complex(0.5, 0.5))
+    assert(zoomed.topLeft === (Point(0, 0), Complex(0.25, 0.25)))
+    assert(zoomed.bottomRight === (Point(1, 2), Complex(0.75, 0.5)))
   }
 
 }
