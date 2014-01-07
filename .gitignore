@@ -1,5 +1,7 @@
 .cache
 .classpath
 .project
+.idea
 .settings
 bin
+mandelbrot.iml
