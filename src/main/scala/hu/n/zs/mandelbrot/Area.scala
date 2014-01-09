@@ -19,9 +19,9 @@ case class Area(pMin: Point, width: Int, height: Int, cMin: Complex, scale: Doub
   
   def iterator: Iterator[(Point, Complex)] = for {
     x <- (0 until width).iterator
-    val im= x * scale + cMin.im
+    im= x * scale + cMin.im
     y <- (0 until height)
-    val re = y * scale + cMin.re
+    re = y * scale + cMin.re
   } yield (Point(x, y), Complex(re, im))
   
   def topLeft: (Point, Complex) = (pMin, cMin)

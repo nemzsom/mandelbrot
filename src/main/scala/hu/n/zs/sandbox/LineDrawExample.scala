@@ -1,4 +1,4 @@
-package hu.n.zs.mandelbrot
+package hu.n.zs.sandbox
 
 import scala.swing.Swing._
 import scala.swing.{ MainFrame, Panel }
