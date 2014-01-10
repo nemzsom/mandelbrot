@@ -11,11 +11,11 @@ class MandelbrotTest extends FunSuite {
   val mandelbrot = Mandelbrot(2)
   
   test("0+0*i is inside the set") {
-    assert(mandelbrot(new Complex(0,0)) < 0)
+    assert(mandelbrot(new Complex(0,0)) === 2)
   }
   
   test("2+1*i is outside the set") {
-    assert(mandelbrot(new Complex(2,1)) >= 0)
+    assert(mandelbrot(new Complex(2,1)) < 2)
   }
 
 }
