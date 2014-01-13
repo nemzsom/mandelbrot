@@ -5,11 +5,8 @@ import scala.swing._
 import scala.swing.event._
 import java.awt.{ Color, Graphics2D }
 import java.awt.image.BufferedImage
-import java.awt.image.BufferedImageOp
-import scala.util.Try
-import java.awt.RenderingHints
 
-object MandelbrotApp extends SimpleSwingApplication {
+object MandelbrotGui extends SimpleSwingApplication {
 
   object State {
     var maxIter = 400
@@ -30,7 +27,7 @@ object MandelbrotApp extends SimpleSwingApplication {
     focusable = true
     listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
 
-    updateImage
+    updateImage()
 
     reactions += {
       case e: MousePressed => draggedFrom = e.point; println(s"clicked: $draggedFrom")
@@ -39,13 +36,13 @@ object MandelbrotApp extends SimpleSwingApplication {
         val diffY = e.point.y - draggedFrom.y
         draggedFrom = e.point
         area = area.move(diffX, diffY)
-        updateImage
-        repaint
+        updateImage()
+        repaint()
       case e: MouseWheelMoved =>
         area = area zoom (1 - e.rotation * 0.25, e.point)
-        updateImage
-        repaint
-      case _: UIElementResized => resize
+        updateImage()
+        repaint()
+      case _: UIElementResized => resize()
       case _: FocusLost => repaint()
     }
 
@@ -54,16 +51,16 @@ object MandelbrotApp extends SimpleSwingApplication {
       g.drawImage(bufferedImage, 0, 0, area.width, area.height, null)
     }
     
-    def resize: Unit = {
+    def resize(): Unit = {
       if (area.width != size.width || area.height != size.height) {
         area = area.resize(size.width, size.height)
         bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
-        updateImage
-        repaint
+        updateImage()
+        repaint()
       }
     }
     
-    def updateImage: Unit = {
+    def updateImage(): Unit = {
       var time = System.nanoTime
       area.foreach { case (Point(x, y), complex) =>
         //println(s"x: $x; y: $y; comp: $complex")

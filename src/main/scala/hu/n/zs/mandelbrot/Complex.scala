@@ -31,11 +31,11 @@ case class Complex(re: Double, im: Double) extends Ordered[Complex] {
   }
 
   // String representation
-  override def toString() =
+  override def toString: Unit =
     this match {
       case Complex.i => "i"
-      case Complex(re, 0) => re.toString
-      case Complex(0, im) => im.toString + "*i"
+      case Complex(real, 0) => real.toString
+      case Complex(0, imag) => imag.toString + "*i"
       case _ => asString
     }
   private def asString =

@@ -6,10 +6,8 @@ import scala.swing.event._
 import java.awt._
 import java.awt.image.BufferedImage
 import scala.swing.SimpleSwingApplication
-import java.awt.geom.AffineTransform
-import java.awt.image.AffineTransformOp
 
-object LineDraw extends SimpleSwingApplication {
+object LineDrawExample extends SimpleSwingApplication {
 
   lazy val ui = new Panel {
     background = Color.white
@@ -27,9 +25,9 @@ object LineDraw extends SimpleSwingApplication {
         requestFocusInWindow()
       case e: MouseDragged => lineTo(e.point)
       case e: MouseReleased => lineTo(e.point)
-      case KeyTyped(_, 'c', _, _) => clear
-      case e: UIElementResized => resize
-      case _: FocusLost => repaint
+      case KeyTyped(_, 'c', _, _) => clear()
+      case e: UIElementResized => resize()
+      case _: FocusLost => repaint()
     }
 
     def lineTo(p: java.awt.Point) {
@@ -42,16 +40,14 @@ object LineDraw extends SimpleSwingApplication {
 
     def moveTo(p: java.awt.Point) {
       actPoint = p
-      //bufferedImage.setRGB(p.x, p.y, lineRGB)
-      //repaint()
     }
 
-    def clear {
+    def clear(): Unit = {
       bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
       repaint()
     }
 
-    def resize {
+    def resize(): Unit = {
       val newImg = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
       val graphics = newImg.createGraphics
       graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
@@ -59,12 +55,12 @@ object LineDraw extends SimpleSwingApplication {
       graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
       graphics.drawImage(bufferedImage, 0, 0, size.width, size.height, null)
       bufferedImage = newImg
-      repaint
+      repaint()
     }
 
     override def paintComponent(g: Graphics2D) = {
       super.paintComponent(g)
-      g.drawImage(bufferedImage, 0, 0, bufferedImage.getWidth(), bufferedImage.getHeight(), null)
+      g.drawImage(bufferedImage, 0, 0, bufferedImage.getWidth, bufferedImage.getHeight, null)
     }
   }
 

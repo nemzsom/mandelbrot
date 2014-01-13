@@ -1,6 +1,5 @@
 package hu.n.zs.mandelbrot
 
-import scala.collection.immutable.Range
 import scala.collection.Iterator
 import scala.collection.immutable.Iterable
 import java.awt.Dimension
@@ -20,7 +19,7 @@ case class Area(pMin: Point, width: Int, height: Int, cMin: Complex, scale: Doub
   def iterator: Iterator[(Point, Complex)] = for {
     x <- (0 until width).iterator
     im= x * scale + cMin.im
-    y <- (0 until height)
+    y <- 0 until height
     re = y * scale + cMin.re
   } yield (Point(x, y), Complex(re, im))
   
@@ -42,9 +41,6 @@ case class Area(pMin: Point, width: Int, height: Int, cMin: Complex, scale: Doub
   
   def zoom(factor: Double, at: Point): Area = {
     val newScale = scale / factor
-    // imStart + scale * at.x = newImStart + newScale * at.x
-    // newImStart = imStart + scale * at.x - newScale * at.x
-    // newImStart = imStart + at.x * (scale - newScale)
     val im = cMin.im + at.x * (scale - newScale)
     val re = cMin.re + at.y * (scale - newScale)
     Area(pMin, width, height, Complex(re, im), newScale)

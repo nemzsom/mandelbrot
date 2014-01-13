@@ -1,6 +1,6 @@
 package hu.n.zs.mandelbrot
 
-import math.{sqrt, pow}
+import math.pow
 import scala.annotation.tailrec
 
 object Mandelbrot {
