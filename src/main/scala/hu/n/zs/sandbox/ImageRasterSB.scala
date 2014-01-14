@@ -2,9 +2,8 @@ package hu.n.zs.sandbox
 
 import scala.swing.Swing._
 import scala.swing.{Panel, MainFrame, SimpleSwingApplication}
-import java.awt.{Graphics2D, Color}
+import java.awt.Graphics2D
 import java.awt.image._
-import java.util
 
 object ImageRasterSB extends SimpleSwingApplication {
 
@@ -34,7 +33,7 @@ object ImageRasterSB extends SimpleSwingApplication {
     for {
       x <- 100 until 200
       y <- 100 until 200
-    } pixelData(y * width + x) = Color.BLUE.getRGB*/
+    } pixelData(y * width + x) = java.awt.Color.BLUE.getRGB*/
 
     override def paintComponent(g: Graphics2D) = {
       super.paintComponent(g)

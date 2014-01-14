@@ -1,56 +1,65 @@
 package hu.n.zs.mandelbrot
 
-import scala.collection.Iterator
-import scala.collection.immutable.Iterable
+object PointLoc extends Enumeration {
+  type PointLoc = Value
+  /** Point is inside the mandelbrot set */
+  val INSIDE = Value("INSIDE")
+  /** We don't know at the current iteration */
+  val UNSETTLED = Value("UNSETTLED")
+  /** Point is outside the mandelbrot set */
+  val OUTSIDE = Value("OUTSIDE")
+}
+
+import PointLoc._
 import java.awt.Dimension
 
-case class Point(x: Int, y: Int)
+class Point(val x: Int, val y: Int, val scale: Double, var iter: Int, var iterValue: Complex, var location: PointLoc) {
+  def complexValue = Complex(y * scale, x * scale)
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[Point]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Point =>
+      (that canEqual this) &&
+        x == that.x &&
+        y == that.y &&
+        scale == that.scale &&
+        iter == that.iter &&
+        iterValue == that.iterValue &&
+        location == that.location
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(x, y, scale, iter, iterValue, location)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+
+  override def toString(): String = {
+    s"Point($x, $y, scale: $scale, iter: $iter, iterValue: $iterValue, loc: $location)"
+  }
+}
 
 object Point {
-  implicit def pair2Point(p: (Int, Int)): Point = new Point(p._1, p._2)
   implicit def point2Dimensions(p: Point): Dimension = new Dimension(p.x, p.y)
-  implicit def awtPointToPoint(p: java.awt.Point) = new Point(p.x, p.y)
+  implicit def point2AwtPoint(p: Point) = new java.awt.Point(p.x, p.y)
 }
 
-/** Area represents a rectangle both on the graphical and the complex pane.
- */
-case class Area(pMin: Point, width: Int, height: Int, cMin: Complex, scale: Double) extends Iterable[(Point, Complex)]{
-  
-  def iterator: Iterator[(Point, Complex)] = for {
-    x <- (0 until width).iterator
-    im= x * scale + cMin.im
-    y <- 0 until height
-    re = y * scale + cMin.re
-  } yield (Point(x, y), Complex(re, im))
-  
-  def topLeft: (Point, Complex) = (pMin, cMin)
-  def topRight: (Point, Complex) = (Point(pMin.x + width - 1, pMin.y), Complex(cMin.re, cMin.im + (width - 1) * scale))
-  def bottomLeft: (Point, Complex) = (Point(pMin.x, pMin.y + height - 1), Complex(cMin.re + (height - 1) * scale, cMin.im))
-  def bottomRight: (Point, Complex) = (Point(pMin.x + width - 1, pMin.y + height - 1), Complex(cMin.re + (height - 1) * scale, cMin.im + (width - 1) * scale))
-  def complexAt(p: Point): Complex = Complex(cMin.re + (p.y - pMin.y) * scale, cMin.im + (p.x - pMin.x) * scale)
-  
-  override def toString() = s"$pMin[$width, $height] | $cMin with scale $scale"
-  
-  def resize(newWidth: Int, newHeight: Int): Area = Area(pMin, newWidth, newHeight, cMin, scale)
-  
-  def move(diffX: Int, diffY: Int): Area = {
-    val newIm = cMin.im - diffX * scale
-    val newRe = cMin.re - diffY * scale
-    Area(pMin, width , height, Complex(newRe, newIm), scale)
+class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) {
+
+  def topLeft: Point = data(startAt)
+
+  def pointAt(x: Int, y: Int): Point = data(startAt + x + y * lineStride)
+
+  def update(f: Point => Unit): Unit = {
+    for (x <- 0 until width; y <- 0 until height) {
+      updateOne(pointAt(x, y))(f)
+    }
   }
-  
-  def zoom(factor: Double, at: Point): Area = {
-    val newScale = scale / factor
-    val im = cMin.im + at.x * (scale - newScale)
-    val re = cMin.re + at.y * (scale - newScale)
-    Area(pMin, width, height, Complex(re, im), newScale)
+
+  protected def updateOne(point: Point)(f: Point => Unit): Unit = {
+    f(point)
   }
 }
 
-object Area {
-  
-  def initialize(pMin: Point, width: Int, height: Int, cMin: Complex, reMax: Double): Area =
-    Area(pMin, width, height, cMin, calcScale(pMin.y, pMin.y + height - 1, cMin.re, reMax))
-    
-  def calcScale(gFrom: Int, gTo: Int, cFrom: Double, cTo: Double): Double = (cTo - cFrom) / (gTo - gFrom)
-}
+

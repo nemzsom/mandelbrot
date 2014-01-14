@@ -10,7 +10,7 @@ object MandelbrotGui extends SimpleSwingApplication {
 
   object State {
     var maxIter = 400
-    var area = Area.initialize(Point(0, 0), 120, 120, Complex(-2, -2), 2)
+    var area = Area_deprecated.initialize(Point_deprecated(0, 0), 120, 120, Complex(-2, -2), 2)
     println(area)
   }
 
@@ -21,7 +21,7 @@ object MandelbrotGui extends SimpleSwingApplication {
     val blackRgb = Color.BLACK.getRGB
     preferredSize = (area.width, area.height)
     var bufferedImage: BufferedImage = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_ARGB)
-    var draggedFrom: Point = (0, 0)
+    var draggedFrom: Point_deprecated = (0, 0)
 
     val mandelbrot = Mandelbrot(maxIter)
     focusable = true
@@ -30,7 +30,7 @@ object MandelbrotGui extends SimpleSwingApplication {
     updateImage()
 
     reactions += {
-      case e: MousePressed => draggedFrom = e.point; println(s"clicked: $draggedFrom")
+      case e: MousePressed => draggedFrom = e.point
       case e: MouseDragged =>
         val diffX = e.point.x - draggedFrom.x
         val diffY = e.point.y - draggedFrom.y
@@ -62,8 +62,7 @@ object MandelbrotGui extends SimpleSwingApplication {
     
     def updateImage(): Unit = {
       var time = System.nanoTime
-      area.foreach { case (Point(x, y), complex) =>
-        //println(s"x: $x; y: $y; comp: $complex")
+      area.foreach { case (Point_deprecated(x, y), complex) =>
         val iter = mandelbrot(complex)
         bufferedImage.setRGB(x, y, getColor(iter))
       }

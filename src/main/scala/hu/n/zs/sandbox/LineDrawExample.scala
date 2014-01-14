@@ -14,7 +14,7 @@ object LineDrawExample extends SimpleSwingApplication {
     preferredSize = (640, 480)
     val lineRGB = Color.black.getRGB
     var bufferedImage: BufferedImage = new BufferedImage(640, 480, BufferedImage.TYPE_INT_ARGB)
-    var actPoint: java.awt.Point = new java.awt.Point()
+    var actPoint = new Point()
 
     focusable = true
     listenTo(mouse.clicks, mouse.moves, keys, this)
