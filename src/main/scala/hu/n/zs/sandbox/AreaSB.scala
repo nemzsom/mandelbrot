@@ -6,9 +6,8 @@ import java.awt.{Color, Graphics2D}
 import java.awt.image.{DataBufferInt, BufferedImage}
 import hu.n.zs.mandelbrot.{Area, Point}
 import scala.concurrent._
-//import ExecutionContext.Implicits.global
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.Executors
+import java.util.concurrent.{ThreadPoolExecutor, Executors}
 
 object AreaSB extends SimpleSwingApplication {
 
@@ -56,6 +55,20 @@ object AreaSB extends SimpleSwingApplication {
 
   class Animator(area: Area, comp: Component) {
 
+    // test parallelism
+    val numOfProcs = Runtime.getRuntime.availableProcessors
+    val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs).asInstanceOf[ThreadPoolExecutor]
+    implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
+    def switchParallelism(): Unit = {
+      val newSize = if (executor.getCorePoolSize == 1) numOfProcs else 1
+      executor.setCorePoolSize(newSize)
+      executor.setMaximumPoolSize(newSize)
+    }
+
+
+    //import ExecutionContext.Implicits.global // for fork-join pool
+
+
     val width = area.width
     val height = area.height
 
@@ -64,11 +77,12 @@ object AreaSB extends SimpleSwingApplication {
     animate(0)
 
     def animate(step: Int): Unit = {
+      if (step % 255 == 0) switchParallelism()
       val counter = new AtomicInteger(workAreas.size - 1)
       def runOnstart = {
         val c = counter.getAndDecrement
-        println(s"started $c on ${Thread.currentThread()}")
-        Thread.sleep(1000)
+        //println(s"started $c on ${Thread.currentThread()}")
+        //Thread.sleep(1000)
         if (c == 0){
           comp.repaint()
           animate(step + 1)
@@ -95,22 +109,11 @@ object AreaSB extends SimpleSwingApplication {
       }
     }
 
-    def updateArea(step: Int, area: Area, runOnStart: => Unit): Unit = {
-      //implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
-      implicit val ec = new ExecutionContext {
-        val threadPool = Executors.newSingleThreadExecutor
 
-        def execute(runnable: Runnable) {
-          threadPool.submit(runnable)
-        }
-
-        def reportFailure(t: Throwable) {}
-      }
-      future {
-        runOnStart
-        area update { point =>
-          point.iter = (255 * (point.x + point.y) / (width + height) + step) % 255
-        }
+    def updateArea(step: Int, area: Area, runOnStart: => Unit): Unit = future {
+      runOnStart
+      area update { point =>
+        point.iter = (255 * (point.x + point.y) / (width + height) + step) % 255
       }
     }
   }
