@@ -6,9 +6,10 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class MandelbrotTest extends FunSuite {
+@deprecated
+class MandelbrotDeprecatedTest extends FunSuite {
   
-  val mandelbrot = Mandelbrot(2)
+  val mandelbrot = Mandelbrot_deprecated(2)
   
   test("0+0*i is inside the set") {
     assert(mandelbrot(new Complex(0,0)) === 2)

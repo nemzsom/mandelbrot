@@ -6,7 +6,8 @@ import scala.swing.event._
 import java.awt.{ Color, Graphics2D }
 import java.awt.image.BufferedImage
 
-object MandelbrotGui extends SimpleSwingApplication {
+@deprecated
+object MandelbrotGui_deprecated extends SimpleSwingApplication {
 
   object State {
     var maxIter = 400
@@ -23,7 +24,7 @@ object MandelbrotGui extends SimpleSwingApplication {
     var bufferedImage: BufferedImage = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_ARGB)
     var draggedFrom: Point_deprecated = (0, 0)
 
-    val mandelbrot = Mandelbrot(maxIter)
+    val mandelbrot = Mandelbrot_deprecated(maxIter)
     focusable = true
     listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
 

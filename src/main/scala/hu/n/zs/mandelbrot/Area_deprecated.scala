@@ -4,8 +4,10 @@ import scala.collection.Iterator
 import scala.collection.immutable.Iterable
 import java.awt.Dimension
 
+@deprecated
 case class Point_deprecated(x: Int, y: Int)
 
+@deprecated
 object Point_deprecated {
   implicit def pair2Point(p: (Int, Int)): Point_deprecated = new Point_deprecated(p._1, p._2)
   implicit def point2Dimensions(p: Point_deprecated): Dimension = new Dimension(p.x, p.y)
@@ -14,6 +16,7 @@ object Point_deprecated {
 
 /** Area represents a rectangle both on the graphical and the complex pane.
  */
+@deprecated
 case class Area_deprecated(pMin: Point_deprecated, width: Int, height: Int, cMin: Complex, scale: Double) extends Iterable[(Point_deprecated, Complex)]{
   
   def iterator: Iterator[(Point_deprecated, Complex)] = for {
@@ -47,6 +50,7 @@ case class Area_deprecated(pMin: Point_deprecated, width: Int, height: Int, cMin
   }
 }
 
+@deprecated
 object Area_deprecated {
   
   def initialize(pMin: Point_deprecated, width: Int, height: Int, cMin: Complex, reMax: Double): Area_deprecated =

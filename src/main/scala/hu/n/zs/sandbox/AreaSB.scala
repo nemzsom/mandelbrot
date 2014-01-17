@@ -27,7 +27,7 @@ object AreaSB extends SimpleSwingApplication {
 
     val colors = new Array[Int](256)
     (0 until 256) foreach { i =>
-      colors(i) = 0xFF000000 | i << 8
+      colors(i) = i << 8
     }
 
     // red lines
@@ -60,11 +60,11 @@ object AreaSB extends SimpleSwingApplication {
     val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs).asInstanceOf[ThreadPoolExecutor]
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
     def switchParallelism(): Unit = {
-      val newSize = if (executor.getCorePoolSize == 1) numOfProcs else 1
+      val threadCount = executor.getCorePoolSize
+      val newSize = if (threadCount == numOfProcs * 2) 1 else threadCount + 1
       executor.setCorePoolSize(newSize)
       executor.setMaximumPoolSize(newSize)
     }
-
 
     //import ExecutionContext.Implicits.global // for fork-join pool
 
@@ -74,10 +74,16 @@ object AreaSB extends SimpleSwingApplication {
 
     val workAreas = init(area.subArea(1, 1, area.width - 2, area.height -2), List.empty[Area])
 
+    var time: Long = System.nanoTime
     animate(0)
 
+
     def animate(step: Int): Unit = {
-      if (step % 255 == 0) switchParallelism()
+      if (step % 255 == 0) {
+        println(f"${(System.nanoTime() - time) / 1e6}%1.0f ms. Threads: ${executor.getCorePoolSize} for processors: $numOfProcs")
+        switchParallelism()
+        time = System.nanoTime
+      }
       val counter = new AtomicInteger(workAreas.size - 1)
       def runOnstart = {
         val c = counter.getAndDecrement
@@ -109,10 +115,9 @@ object AreaSB extends SimpleSwingApplication {
       }
     }
 
-
     def updateArea(step: Int, area: Area, runOnStart: => Unit): Unit = future {
       runOnStart
-      area update { point =>
+        area update { point =>
         point.iter = (255 * (point.x + point.y) / (width + height) + step) % 255
       }
     }

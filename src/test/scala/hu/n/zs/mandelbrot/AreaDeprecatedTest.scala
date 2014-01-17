@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
+@deprecated
 class AreaDeprecatedTest extends FunSuite {
   
   /**

@@ -9,7 +9,6 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class AreaTest extends FunSuite {
 
-
   /**
    *  x,y:                          complexes:
    *  -----                         ------------
@@ -29,13 +28,22 @@ class AreaTest extends FunSuite {
     assert(Point.complexAt(2, 3, 0.5) === Complex(1.5, 1))
   }
 
-  test("apply") {
+  test("apply with scale") {
     val scale = 1.0
     val area = Area(Point(2, 3, scale), scale, 3, 2)
     assert(area.pointAt(0, 0) === Point(2, 3, scale))
     assert(area.pointAt(2, 0) === Point(4, 3, scale))
     assert(area.pointAt(0, 1) === Point(2, 4, scale))
     assert(area.pointAt(2, 1) === Point(4, 4, scale))
+  }
+
+  test("apply with complex specifications") {
+    val area = Area(Complex(-1, -1), 2, 5, 9)
+    val expectedScale = 0.25
+    assert(area.scale === expectedScale)
+    assert(area.topLeft === Point(-4, -4, expectedScale))
+    assert(area.data.last === Point(0, 4, expectedScale))
+    assert(area.pointAt(4, 4) === Point(0, 0, expectedScale))
   }
 
   test("topLeft") {

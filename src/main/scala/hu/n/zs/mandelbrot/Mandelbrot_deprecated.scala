@@ -3,7 +3,8 @@ package hu.n.zs.mandelbrot
 import math.pow
 import scala.annotation.tailrec
 
-object Mandelbrot {
+@deprecated
+object Mandelbrot_deprecated {
   type Mb = Complex => Int
   
   def contains(iter: Int, c: Complex): Int = {

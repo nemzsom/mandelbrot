@@ -81,6 +81,14 @@ object Area {
     }
     new Area(scale, data, width, 0, width, height)
   }
+
+  def apply(topLeftComp: Complex, reInterval: Double, width: Int, height: Int): Area = {
+    val scale: Double = reInterval / (height - 1)
+    val reMin = topLeftComp.re
+    val imMin = topLeftComp.im
+    val topLeft = Point((imMin / scale).toInt, (reMin / scale).toInt, scale)
+    apply(topLeft, scale, width, height)
+  }
 }
 
 
