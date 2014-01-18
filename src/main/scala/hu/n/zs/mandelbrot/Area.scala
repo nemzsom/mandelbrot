@@ -13,7 +13,11 @@ object PointLoc extends Enumeration {
 import PointLoc._
 import java.awt.Dimension
 
-class Point (val x: Int, val y: Int, var iter: Int, var iterValue: Complex, var location: PointLoc) {
+class Point (val x: Int, val y: Int, val complexValue: Complex) {
+
+  var iter = 0
+  var iterValue = Complex.ZERO
+  var location = if (Point.preCheck_isInside(complexValue)) INSIDE else UNSETTLED
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[Point]
 
@@ -39,12 +43,23 @@ class Point (val x: Int, val y: Int, var iter: Int, var iterValue: Complex, var 
 
 object Point {
 
-  def complexAt(x: Int, y: Int, scale: Double) = Complex(y * scale, x * scale)
+  import scala.math._
 
-  def apply(x: Int, y: Int, scale: Double) = new Point(x, y, 0, complexAt(x, y, scale), UNSETTLED)
+  def apply(x: Int, y: Int, scale: Double) = new Point(x, y, complexAt(x, y, scale))
+
+  def complexAt(x: Int, y: Int, scale: Double) = Complex(y * scale, x * scale)
 
   implicit def point2Dimensions(p: Point): Dimension = new Dimension(p.x, p.y)
   implicit def point2AwtPoint(p: Point) = new java.awt.Point(p.x, p.y)
+
+  /** Optimization: Cardioid / bulb checking
+    *  from http://en.wikipedia.org/wiki/Mandelbrot_set#Cardioid_.2F_bulb_checking
+    */
+  def preCheck_isInside(c: Complex): Boolean = {
+    val q = pow(c.re - 0.25, 2) + pow(c.im, 2)
+    q*(q + (c.re - 0.25)) < pow(c.im, 2) / 4 ||
+      pow(c.re + 1, 2) + pow(c.im, 2) < 0.0625
+  }
 }
 
 class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) {

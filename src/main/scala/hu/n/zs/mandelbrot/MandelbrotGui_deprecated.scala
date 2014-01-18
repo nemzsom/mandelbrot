@@ -10,8 +10,8 @@ import java.awt.image.BufferedImage
 object MandelbrotGui_deprecated extends SimpleSwingApplication {
 
   object State {
-    var maxIter = 400
-    var area = Area_deprecated.initialize(Point_deprecated(0, 0), 120, 120, Complex(-2, -2), 2)
+    var maxIter = 5000
+    var area = Area_deprecated.initialize(Point_deprecated(0, 0), 640, 480, Complex(-2, -2), 2)
     println(area)
   }
 
