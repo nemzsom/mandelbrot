@@ -12,7 +12,6 @@ object MandelbrotGui_deprecated extends SimpleSwingApplication {
   object State {
     var maxIter = 5000
     var area = Area_deprecated.initialize(Point_deprecated(0, 0), 640, 480, Complex(-2, -2), 2)
-    println(area)
   }
 
   import State._
@@ -21,12 +20,23 @@ object MandelbrotGui_deprecated extends SimpleSwingApplication {
 
     val blackRgb = Color.BLACK.getRGB
     preferredSize = (area.width, area.height)
-    var bufferedImage: BufferedImage = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_ARGB)
+    var bufferedImage: BufferedImage = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB)
     var draggedFrom: Point_deprecated = (0, 0)
 
     val mandelbrot = Mandelbrot_deprecated(maxIter)
     focusable = true
     listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
+
+    val colorMap = new Array[Int](maxIter + 1)
+    for (i <- 0 until maxIter) {
+      colorMap(i) =  {
+        val c=3*math.log(i)/math.log(maxIter-1.0)
+        if(c<1) (255*c).toInt << 16
+        else if(c<2) 0x00FF0000 | (255*c).toInt << 8
+        else 0x00FFFF00 | (255*c).toInt
+      }
+    }
+    colorMap(maxIter) = 0
 
     updateImage()
 
@@ -55,7 +65,7 @@ object MandelbrotGui_deprecated extends SimpleSwingApplication {
     def resize(): Unit = {
       if (area.width != size.width || area.height != size.height) {
         area = area.resize(size.width, size.height)
-        bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
+        bufferedImage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_RGB)
         updateImage()
         repaint()
       }
@@ -65,7 +75,7 @@ object MandelbrotGui_deprecated extends SimpleSwingApplication {
       var time = System.nanoTime
       area.foreach { case (Point_deprecated(x, y), complex) =>
         val iter = mandelbrot(complex)
-        bufferedImage.setRGB(x, y, getColor(iter))
+        bufferedImage.setRGB(x, y, if (iter % 2 == 0) 0 else 0xFFFFFFFF/*colorMap(iter)*/)
       }
       time = System.nanoTime - time
       println(s"render time: ${time / 1000000} ms")
@@ -76,12 +86,4 @@ object MandelbrotGui_deprecated extends SimpleSwingApplication {
     title = "Mandelbrot set"
     contents = ui
   }
-  
-  def getColor(iter: Int):Int={
-      if (iter == maxIter) return Color.BLACK.getRGB
-      val c=3*math.log(iter)/math.log(maxIter-1.0)
-      if(c<1) new Color((255*c).toInt, 0, 0).getRGB
-      else if(c<2) new Color(255, (255*(c-1)).toInt, 0).getRGB
-      else new Color(255, 255, (255*(c-2)).toInt).getRGB
-   }
 }

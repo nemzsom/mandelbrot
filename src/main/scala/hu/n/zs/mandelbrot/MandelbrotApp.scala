@@ -10,11 +10,13 @@ import scala.swing.event.MouseDragged
 import scala.swing.event.UIElementResized
 import java.awt.image.{DataBufferInt, BufferedImage}
 
-object MandelbrotApp extends SimpleSwingApplication with Calculator{
+object MandelbrotApp extends SimpleSwingApplication {
 
-  val area = Area(Complex(-2, -2), 4, 640, 480)
+  lazy val ui = new Panel with Calculator with ColorMap {
 
-  lazy val ui = new Panel {
+    val width = 640
+    val height = 480
+    val area = Area(Complex(-2, -2), 4, width, height)
 
     var image = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB)
     preferredSize = (area.width, area.height)
@@ -35,23 +37,10 @@ object MandelbrotApp extends SimpleSwingApplication with Calculator{
       g.drawImage(image, 0, 0, image.getWidth, image.getHeight, null)
     }
 
-
-
     // test code
 
-    import PointLoc._
+    val maxIter = 3000
 
-    val maxIter = 5000
-    val colorMap = new Array[Int](maxIter + 1)
-    for (i <- 0 until maxIter) {
-      colorMap(i) =  {
-        val c=3*math.log(i)/math.log(maxIter-1.0)
-        if(c<1) (255*c).toInt << 16
-        else if(c<2) 0x00FF0000 | (255*c).toInt << 8
-        else 0x00FFFF00 | (255*c).toInt
-      }
-    }
-    colorMap(maxIter) = 0
     def update(): Unit = {
       val time = System.nanoTime
       calculate(maxIter)
@@ -61,17 +50,16 @@ object MandelbrotApp extends SimpleSwingApplication with Calculator{
       val areaData = area.data
       (0 until pixelData.size).foreach { i =>
         val point = areaData(i)
-        pixelData(i) = if (point.location == INSIDE) 0 else colorMap(point.iter)
+        pixelData(i) = color(point.iter)
       }
       println(s"render time: ${(System.nanoTime - time) / 1000000} ms")
       repaint()
     }
-
-    update()
   }
 
   def top = new MainFrame {
     title = "Mandelbrot set"
+    ui.update()
     contents = ui
   }
 

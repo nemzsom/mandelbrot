@@ -28,11 +28,6 @@ class AreaTest extends FunSuite {
     assert(Point.complexAt(2, 3, 0.5) === Complex(1.5, 1))
   }
 
-  test("Point.apply should preCheck the location") {
-    assert(Point(0, 0, 1).location === INSIDE)
-    assert(Point(2, 2, 1).location === UNSETTLED)
-  }
-
   test("apply with scale") {
     val scale = 1.0
     val area = Area(Point(2, 3, scale), scale, 3, 2)
