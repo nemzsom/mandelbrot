@@ -2,12 +2,14 @@ package hu.n.zs.mandelbrot
 
 trait ColorMap {
 
-  import Util._
-
   val nOfColors: Int = 2
 
-  def color(iter: Int): Int = {
-    if (iter % 2 == 0) 0 else 0xFFFFFFFF
+  def color(point: Point): Int = {
+    point.location match {
+      case Inside => 0
+      case Outside(iter) => if (iter % 2 == 0) 0 else 0xFFFFFFFF
+      case Unsettled => 255
+    }
   }
 
   lazy val colorMap: Array[Int] = {

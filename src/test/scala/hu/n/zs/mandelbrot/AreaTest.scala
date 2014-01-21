@@ -1,6 +1,5 @@
 package hu.n.zs.mandelbrot
 
-import PointLoc._
 import org.scalatest.FunSuite
 
 import org.junit.runner.RunWith
@@ -64,28 +63,27 @@ class AreaTest extends FunSuite {
     }
   }
 
-  test("update") {
+  test("foreach") {
     new TestArea {
-      area update { point =>
+      area foreach  { point =>
         val px = point.x
         val py = point.y
         point.iter = px + py
         point.iterValue =  point.complexValue * 2
         (point.x, point.y) match {
-          case (x, y) if x == y => point.location = UNSETTLED
-          case (x, y) if x > y => point.location = INSIDE
-          case _ => point.location = OUTSIDE
+          case (x, y) if x == y => point.location = Unsettled
+          case (x, y) if x > y => point.location = Inside
+          case (x, y) => point.location = Outside(x + y)
         }
       }
 
       assert(data.forall { point =>
-        println(point)
         point.iter == point.x + point.y &&
         point.iterValue == point.complexValue * 2 &&
         (point.location match {
-          case UNSETTLED => point.x == point.y
-          case INSIDE => point.x > point.y
-          case OUTSIDE => point.x < point.y
+          case Unsettled => point.x == point.y
+          case Inside => point.x > point.y
+          case Outside(xy) => point.x < point.y && xy == point.x + point.y
         })
       })
     }

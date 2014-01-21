@@ -1,23 +1,19 @@
 package hu.n.zs.mandelbrot
 
-object PointLoc extends Enumeration {
-  type PointLoc = Value
-  /** Point is inside the mandelbrot set */
-  val INSIDE = Value("INSIDE")
-  /** We don't know at the current iteration */
-  val UNSETTLED = Value("UNSETTLED")
-  /** Point is outside the mandelbrot set */
-  val OUTSIDE = Value("OUTSIDE")
-}
+sealed trait PointLoc
 
-import PointLoc._
-import java.awt.Dimension
+/** Point is inside the mandelbrot set */
+case object Inside extends PointLoc
+/** We don't know at the current iteration */
+case object Unsettled extends PointLoc
+/** Point is outside the mandelbrot set, escaped at the specified iteration */
+case class Outside(iter: Int) extends PointLoc
 
 class Point (val x: Int, val y: Int, val complexValue: Complex) {
 
   var iter = 0
   var iterValue = Complex.ZERO
-  var location = UNSETTLED
+  var location: PointLoc = Unsettled
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[Point]
 
@@ -43,6 +39,8 @@ class Point (val x: Int, val y: Int, val complexValue: Complex) {
 
 object Point {
 
+  import java.awt.Dimension
+
   def apply(x: Int, y: Int, scale: Double) = new Point(x, y, complexAt(x, y, scale))
 
   def complexAt(x: Int, y: Int, scale: Double) = Complex(y * scale, x * scale)
@@ -51,7 +49,7 @@ object Point {
   implicit def point2AwtPoint(p: Point) = new java.awt.Point(p.x, p.y)
 }
 
-class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) {
+class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) extends Traversable[Point] {
 
   def topLeft: Point = data(startAt)
 
@@ -59,7 +57,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
   def pointAt(x: Int, y: Int): Point = data(indexFor(x, y))
 
-  def update(f: Point => Unit): Unit = {
+  def foreach[U](f: Point => U): Unit = {
     for (x <- 0 until width; y <- 0 until height) {
       f(pointAt(x, y))
     }
@@ -67,6 +65,11 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
   def subArea(x: Int, y: Int, width: Int, height: Int): Area = {
     new Area(scale, data, lineStride, indexFor(x, y), width, height)
+  }
+
+  def isUniform: Boolean = {
+    val loc = topLeft.location
+    forall(_.location == loc)
   }
 }
 

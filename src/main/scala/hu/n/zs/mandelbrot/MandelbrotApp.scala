@@ -17,6 +17,7 @@ object MandelbrotApp extends SimpleSwingApplication {
     val width = 640
     val height = 480
     val area = Area(Complex(-2, -2), 4, width, height)
+    setDebugArea(area)
 
     var image = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB)
     preferredSize = (area.width, area.height)
@@ -25,7 +26,7 @@ object MandelbrotApp extends SimpleSwingApplication {
     listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
 
     reactions += {
-      case e: MousePressed =>
+      case e: MousePressed => println(s"clicked: ${e.point}")
       case e: MouseDragged =>
       case e: MouseWheelMoved =>
       case _: UIElementResized =>
@@ -39,28 +40,39 @@ object MandelbrotApp extends SimpleSwingApplication {
 
     // test code
 
-    val maxIter = 3000
+    val raster = image.getRaster
+    val databuffer: DataBufferInt = raster.getDataBuffer.asInstanceOf[DataBufferInt]
+    val pixelData = databuffer.getData
+    val areaData = area.data
 
-    def update(): Unit = {
+    val maxIter = 300
+
+    def update(updater: Updater): Unit = {
       val time = System.nanoTime
-      calculate(maxIter)
-      val raster = image.getRaster
-      val databuffer: DataBufferInt = raster.getDataBuffer.asInstanceOf[DataBufferInt]
-      val pixelData = databuffer.getData
-      val areaData = area.data
-      (0 until pixelData.size).foreach { i =>
-        val point = areaData(i)
-        pixelData(i) = color(point.iter)
+      updater.update.onSuccess {
+        case updater =>
+          (0 until pixelData.size).foreach { i =>
+            val point = areaData(i)
+            //logPoint(s"coloring to ${color(point)}", point)
+            pixelData(i) = color(point)
+            /*if ((debugPointAt.x - 5 to debugPointAt.x + 5).contains(point.x) && point.y == debugPointAt.y ||
+                point.x == debugPointAt.x && (debugPointAt.y - 5 to debugPointAt.y + 5).contains(point.y)) {
+              pixelData(i) = 255 << 16
+            }*/
+          }
+          println(s"render time: ${(System.nanoTime - time) / 1000000} ms")
+          repaint()
+          if (updater.maxIter < maxIter){
+            //Thread.sleep(1500)
+            update(updater)
+          }
       }
-      println(s"render time: ${(System.nanoTime - time) / 1000000} ms")
-      repaint()
     }
   }
 
   def top = new MainFrame {
     title = "Mandelbrot set"
-    ui.update()
+    ui.update(new Updater(ui.area, 300))
     contents = ui
   }
-
 }

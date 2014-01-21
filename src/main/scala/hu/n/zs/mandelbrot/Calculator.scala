@@ -1,9 +1,8 @@
 package hu.n.zs.mandelbrot
 
 import scala.annotation.tailrec
-import PointLoc._
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
-import scala.concurrent.ExecutionContext
+import scala.concurrent._
 import scala.math._
 
 /**
@@ -12,7 +11,6 @@ import scala.math._
 trait Calculator {
 
   val area: Area
-  lazy val scale = area.scale
 
   val numOfProcs = Runtime.getRuntime.availableProcessors
   val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs *2).asInstanceOf[ThreadPoolExecutor]
@@ -24,27 +22,52 @@ trait Calculator {
     area.subArea(1, area.height - 1, area.width - 1, 1)
     area.subArea(0, 1, 1, area.height - 1)
   }
+}
 
-  def calculate(maxIter: Int): Unit = {
-    area.update { point =>
-      if (point.location == UNSETTLED){
-        if (point.iter == 0 && preCheck_isInside(point.complexValue)) point.location == INSIDE
-        else iterate(maxIter, point)
+class Updater(val area: Area, val iterationStep: Int, val maxIter: Int) {
+
+  val scale = area.scale
+
+  // TODO remove test
+  val numOfProcs = Runtime.getRuntime.availableProcessors
+  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs *2).asInstanceOf[ThreadPoolExecutor]
+  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
+  // end test
+
+  def this(area: Area, iterationStep: Int) = this(area, iterationStep, iterationStep)
+
+  lazy val update: Future[Updater] = future {
+    updateArea()
+    new Updater(area, iterationStep, maxIter + iterationStep)
+  }
+
+  private def updateArea(): Unit = {
+    area.foreach { point =>
+      if (point.location == Unsettled){
+        logPoint(s"updatePoint to $maxIter", point)
+        if (point.iter == 0 && preCheck_isInside(point.complexValue)) point.location = Inside
+        else iterate(point)
+        logPoint(s"updateResult", point)
       }
     }
   }
 
-  private def iterate(maxIter: Int, point: Point): Unit = {
+  private def iterate(point: Point): Unit = {
     val c = Point.complexAt(point.x, point.y, scale)
+    logPoint(s"iterate to $maxIter", point)
     @tailrec def loop(iter: Int, z: Complex): Unit = {
       val escaped = z.escaped
-      if (iter == maxIter || z.escaped) {
+      logPoint(s"loop $iter. escaped: $escaped", point)
+      if (iter == maxIter || escaped) {
         point.iter = iter
-        point.location = if (escaped) OUTSIDE else UNSETTLED
+        point.iterValue = z
+        if (escaped) point.location = Outside(iter)
       }
       else loop(iter+1, z*z + c)
     }
-    loop(point.iter, point.iterValue)
+    val z = point.iterValue
+    loop(point.iter+1, z*z + c)
+    logPoint(s"iteration result", point)
   }
 
   /** Optimization: Cardioid / bulb checking

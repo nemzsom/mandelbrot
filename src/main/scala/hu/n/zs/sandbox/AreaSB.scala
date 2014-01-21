@@ -31,10 +31,10 @@ object AreaSB extends SimpleSwingApplication {
     }
 
     // red lines
-    area.subArea(0, 0, area.width - 1, 1).update(_.iter = -1)
-    area.subArea(area.width - 1, 0, 1, area.height - 1).update(_.iter = -1)
-    area.subArea(1, area.height - 1, area.width - 1, 1).update(_.iter = -1)
-    area.subArea(0, 1, 1, area.height - 1).update(_.iter = -1)
+    area.subArea(0, 0, area.width - 1, 1).foreach(_.iter = -1)
+    area.subArea(area.width - 1, 0, 1, area.height - 1).foreach(_.iter = -1)
+    area.subArea(1, area.height - 1, area.width - 1, 1).foreach(_.iter = -1)
+    area.subArea(0, 1, 1, area.height - 1).foreach(_.iter = -1)
 
     val animator = new Animator(area, this)
 
@@ -103,13 +103,13 @@ object AreaSB extends SimpleSwingApplication {
         if (area.height > area.width) {
           val halfY = area.height / 2
           val extendedAreas = init(area.subArea(0, 0, area.width, halfY - 1), workAreas)
-          area.subArea(0, halfY, area.width, 1).update(_.iter = -1)
+          area.subArea(0, halfY, area.width, 1).foreach(_.iter = -1)
           init(area.subArea(0, halfY + 1, area.width, halfY - 1), extendedAreas)
         }
         else {
           val halfX = area.width / 2
           val extendedAreas = init(area.subArea(0, 0, halfX -1 , area.height), workAreas)
-          area.subArea(halfX, 0, 1, area.height).update(_.iter = -1)
+          area.subArea(halfX, 0, 1, area.height).foreach(_.iter = -1)
           init(area.subArea(halfX + 1, 0, halfX -1 , area.height), extendedAreas)
         }
       }
@@ -117,7 +117,7 @@ object AreaSB extends SimpleSwingApplication {
 
     def updateArea(step: Int, area: Area, runOnStart: => Unit): Unit = future {
       runOnStart
-        area update { point =>
+        area foreach { point =>
         point.iter = (255 * (point.x + point.y) / (width + height) + step) % 255
       }
     }
