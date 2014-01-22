@@ -9,18 +9,28 @@ import scala.swing.event.MouseWheelMoved
 import scala.swing.event.MouseDragged
 import scala.swing.event.UIElementResized
 import java.awt.image.{DataBufferInt, BufferedImage}
+import scala.concurrent.ExecutionContext
+import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
 object MandelbrotApp extends SimpleSwingApplication {
 
-  lazy val ui = new Panel with Calculator with ColorMap {
+  val numOfProcs = Runtime.getRuntime.availableProcessors
+  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs *2).asInstanceOf[ThreadPoolExecutor]
+  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-    val width = 640
-    val height = 480
-    val area = Area(Complex(-2, -2), 4, width, height)
-    setDebugArea(area)
+  lazy val ui = new Panel with Calculator with Renderer {
 
-    var image = new BufferedImage(area.width, area.height, BufferedImage.TYPE_INT_RGB)
-    preferredSize = (area.width, area.height)
+    val width = 1000
+    val height = 1000
+    val mainArea = Area(Complex(-2, -2), 4, width, height)
+    setDebugArea(mainArea)
+
+    var image = new BufferedImage(mainArea.width, mainArea.height, BufferedImage.TYPE_INT_RGB)
+    preferredSize = (mainArea.width, mainArea.height)
+    val raster = image.getRaster
+    val databuffer: DataBufferInt = raster.getDataBuffer.asInstanceOf[DataBufferInt]
+    val pixels = databuffer.getData
+    val painter = this
 
     focusable = true
     listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
@@ -37,42 +47,22 @@ object MandelbrotApp extends SimpleSwingApplication {
       super.paintComponent(g)
       g.drawImage(image, 0, 0, image.getWidth, image.getHeight, null)
     }
-
-    // test code
-
-    val raster = image.getRaster
-    val databuffer: DataBufferInt = raster.getDataBuffer.asInstanceOf[DataBufferInt]
-    val pixelData = databuffer.getData
-    val areaData = area.data
-
-    val maxIter = 300
-
-    def update(updater: Updater): Unit = {
-      val time = System.nanoTime
-      updater.update.onSuccess {
-        case updater =>
-          (0 until pixelData.size).foreach { i =>
-            val point = areaData(i)
-            //logPoint(s"coloring to ${color(point)}", point)
-            pixelData(i) = color(point)
-            /*if ((debugPointAt.x - 5 to debugPointAt.x + 5).contains(point.x) && point.y == debugPointAt.y ||
-                point.x == debugPointAt.x && (debugPointAt.y - 5 to debugPointAt.y + 5).contains(point.y)) {
-              pixelData(i) = 255 << 16
-            }*/
-          }
-          println(s"render time: ${(System.nanoTime - time) / 1000000} ms")
-          repaint()
-          if (updater.maxIter < maxIter){
-            //Thread.sleep(1500)
-            update(updater)
-          }
-      }
-    }
   }
 
   def top = new MainFrame {
     title = "Mandelbrot set"
-    ui.update(new Updater(ui.area, 300))
+    testIt()
     contents = ui
+  }
+
+  def testIt(): Unit = {
+    val area = ui.mainArea
+    val seq = Seq(
+      Updater(area.subArea(0, 0, 500, 500), 3000),
+      Updater(area.subArea(0, 500, 500, 500), 3000),
+      Updater(area.subArea(500, 0, 500, 500), 3000),
+      Updater(area.subArea(500, 500, 500, 500), 3000)
+    )
+    ui.calc(seq, null)
   }
 }

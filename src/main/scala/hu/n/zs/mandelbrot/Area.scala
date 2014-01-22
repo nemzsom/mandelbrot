@@ -9,28 +9,11 @@ case object Unsettled extends PointLoc
 /** Point is outside the mandelbrot set, escaped at the specified iteration */
 case class Outside(iter: Int) extends PointLoc
 
-class Point (val x: Int, val y: Int, val complexValue: Complex) {
+class Point (val x: Int, val y: Int, val complexValue: Complex, val index: Int) {
 
   var iter = 0
   var iterValue = Complex.ZERO
   var location: PointLoc = Unsettled
-
-  def canEqual(other: Any): Boolean = other.isInstanceOf[Point]
-
-  override def equals(other: Any): Boolean = other match {
-    case that: Point =>
-      (that canEqual this) &&
-        x == that.x &&
-        y == that.y &&
-        iter == that.iter &&
-        iterValue == that.iterValue
-    case _ => false
-  }
-
-  override def hashCode: Int = {
-    val state = Seq(x, y, iter, iterValue)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-  }
 
   override def toString: String = {
     s"Point($x, $y, iter: $iter, iterValue: $iterValue, loc: $location)"
@@ -41,7 +24,7 @@ object Point {
 
   import java.awt.Dimension
 
-  def apply(x: Int, y: Int, scale: Double) = new Point(x, y, complexAt(x, y, scale))
+  def apply(x: Int, y: Int, scale: Double, index: Int) = new Point(x, y, complexAt(x, y, scale), index)
 
   def complexAt(x: Int, y: Int, scale: Double) = Complex(y * scale, x * scale)
 
@@ -75,15 +58,16 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
 object Area {
 
-  def apply(topLeft: Point, scale: Double, width: Int, height: Int): Area = {
+  def apply(topLeft: (Int, Int), scale: Double, width: Int, height: Int): Area = {
+    val (topLeftX, topLeftY) = topLeft
     val size = width * height
     val data = new Array[Point](size)
     var i = 0
     for {
-      y <- topLeft.y until topLeft.y + height
-      x <- topLeft.x until topLeft.x + width
+      y <- topLeftY until topLeftY + height
+      x <- topLeftX until topLeftX + width
     } {
-      data(i) = Point(x, y, scale)
+      data(i) = Point(x, y, scale, i)
       i += 1
     }
     new Area(scale, data, width, 0, width, height)
@@ -93,7 +77,7 @@ object Area {
     val scale: Double = reInterval / (height - 1)
     val reMin = topLeftComp.re
     val imMin = topLeftComp.im
-    val topLeft = Point((imMin / scale).toInt, (reMin / scale).toInt, scale)
+    val topLeft = ((imMin / scale).toInt, (reMin / scale).toInt)
     apply(topLeft, scale, width, height)
   }
 }

@@ -22,7 +22,7 @@ object AreaSB extends SimpleSwingApplication {
     val databuffer: DataBufferInt = raster.getDataBuffer.asInstanceOf[DataBufferInt]
     val pixelData = databuffer.getData
 
-    val area = Area(Point(0, 0, 1.0), 0.1, width, height)
+    val area = Area((0, 0), 0.1, width, height)
     val areaData = area.data
 
     val colors = new Array[Int](256)

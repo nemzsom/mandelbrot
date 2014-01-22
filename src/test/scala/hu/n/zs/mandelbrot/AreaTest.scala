@@ -17,8 +17,19 @@ class AreaTest extends FunSuite {
    */
   trait TestArea {
     val scale = 1.0
-    val area: Area = Area(Point(0, 0, scale), scale, 3, 3)
+    val area: Area = Area((0, 0), scale, 3, 3)
     val data = area.data
+  }
+
+  def assertCoords(point: Point, coords: (Int, Int)) = {
+    val (x, y) = coords
+    assert(point.x === x)
+    assert(point.y === y)
+  }
+
+  def assertPoint(point: Point, coords: (Int, Int), scale: Double) = {
+    assertCoords(point, coords)
+    assert(point.complexValue === Point.complexAt(coords._1, coords._2, scale))
   }
 
   test("Point.complexAt should calculate the complex value based on x,y and scale") {
@@ -29,27 +40,33 @@ class AreaTest extends FunSuite {
 
   test("apply with scale") {
     val scale = 1.0
-    val area = Area(Point(2, 3, scale), scale, 3, 2)
-    assert(area.pointAt(0, 0) === Point(2, 3, scale))
-    assert(area.pointAt(2, 0) === Point(4, 3, scale))
-    assert(area.pointAt(0, 1) === Point(2, 4, scale))
-    assert(area.pointAt(2, 1) === Point(4, 4, scale))
+    val area = Area((2, 3), scale, 3, 2)
+    area.data.zipWithIndex.forall{ case (point, index) =>
+      point.index == index
+    }
+    assertCoords(area.pointAt(0, 0), (2, 3))
+    assertCoords(area.pointAt(2, 0), (4, 3))
+    assertCoords(area.pointAt(0, 1), (2, 4))
+    assertCoords(area.pointAt(2, 1), (4, 4))
   }
 
   test("apply with complex specifications") {
     val area = Area(Complex(-1, -1), 2, 5, 9)
+    area.data.zipWithIndex.forall{ case (point, index) =>
+      point.index == index
+    }
     val expectedScale = 0.25
     assert(area.scale === expectedScale)
-    assert(area.topLeft === Point(-4, -4, expectedScale))
-    assert(area.data.last === Point(0, 4, expectedScale))
-    assert(area.pointAt(4, 4) === Point(0, 0, expectedScale))
+    assertPoint(area.topLeft, (-4, -4), expectedScale)
+    assertPoint(area.data.last, (0, 4), expectedScale)
+    assertPoint(area.pointAt(4, 4), (0, 0), expectedScale)
   }
 
   test("topLeft") {
     new TestArea {
-      assert(area.topLeft === Point(0, 0, scale))
+      assertCoords(area.topLeft, (0, 0))
       val area2 = new Area(scale, data, 3, 4, 2, 2)
-      assert(area2.topLeft === Point(1, 1, scale))
+      assertCoords(area2.topLeft, (1, 1))
     }
   }
 
@@ -92,29 +109,29 @@ class AreaTest extends FunSuite {
   test("subArea square") {
     new TestArea {
       val subArea = area.subArea(1, 1, 2, 2)
-      assert(subArea.pointAt(0, 0) === Point(1, 1, scale))
-      assert(subArea.pointAt(1, 0) === Point(2, 1, scale))
-      assert(subArea.pointAt(0, 1) === Point(1, 2, scale))
-      assert(subArea.pointAt(1, 1) === Point(2, 2, scale))
+      assertCoords(subArea.pointAt(0, 0), (1, 1))
+      assertCoords(subArea.pointAt(1, 0), (2, 1))
+      assertCoords(subArea.pointAt(0, 1), (1, 2))
+      assertCoords(subArea.pointAt(1, 1), (2, 2))
     }
   }
 
   test("subArea rectangle") {
     new TestArea {
       val subArea = area.subArea(1, 0, 2, 3)
-      assert(subArea.pointAt(0, 0) === Point(1, 0, scale))
-      assert(subArea.pointAt(1, 0) === Point(2, 0, scale))
-      assert(subArea.pointAt(0, 2) === Point(1, 2, scale))
-      assert(subArea.pointAt(1, 2) === Point(2, 2, scale))
+      assertCoords(subArea.pointAt(0, 0), (1, 0))
+      assertCoords(subArea.pointAt(1, 0), (2, 0))
+      assertCoords(subArea.pointAt(0, 2), (1, 2))
+      assertCoords(subArea.pointAt(1, 2), (2, 2))
     }
   }
 
   test("subArea line") {
     new TestArea {
       val subArea = area.subArea(0, 2, 3, 1)
-      assert(subArea.pointAt(0, 0) === Point(0, 2, scale))
-      assert(subArea.pointAt(1, 0) === Point(1, 2, scale))
-      assert(subArea.pointAt(2, 0) === Point(2, 2, scale))
+      assertCoords(subArea.pointAt(0, 0), (0, 2))
+      assertCoords(subArea.pointAt(1, 0), (1, 2))
+      assertCoords(subArea.pointAt(2, 0), (2, 2))
     }
   }
 }
