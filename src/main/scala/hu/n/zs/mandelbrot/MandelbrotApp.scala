@@ -20,8 +20,8 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   lazy val ui = new Panel with Calculator with Renderer {
 
-    val width = 1000
-    val height = 1000
+    val width = 640
+    val height = 480
     val mainArea = Area(Complex(-2, -2), 4, width, height)
     setDebugArea(mainArea)
 
@@ -51,18 +51,6 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   def top = new MainFrame {
     title = "Mandelbrot set"
-    testIt()
     contents = ui
-  }
-
-  def testIt(): Unit = {
-    val area = ui.mainArea
-    val seq = Seq(
-      Updater(area.subArea(0, 0, 500, 500), 3000),
-      Updater(area.subArea(0, 500, 500, 500), 3000),
-      Updater(area.subArea(500, 0, 500, 500), 3000),
-      Updater(area.subArea(500, 500, 500, 500), 3000)
-    )
-    ui.calc(seq, null)
   }
 }

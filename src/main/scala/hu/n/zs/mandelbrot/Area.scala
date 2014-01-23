@@ -54,6 +54,30 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     val loc = topLeft.location
     forall(_.location == loc)
   }
+
+  /**
+   * Splits this area into 3 pieces: 2 pieces as left and right, and an 1px wide cut between them
+   * @return triple as (left, cut, right)
+   */
+  def splitVertical: (Area, Area, Area) = {
+    val half = width / 2
+    val cut = subArea(half, 0, 1, height)
+    val left = subArea(0, 0, half, height)
+    val right = subArea(half + 1, 0, width - half - 1, height)
+    (left, cut, right)
+  }
+
+  /**
+   * Splits this area into 3 pieces: 2 pieces as top and bottom, and the 1px tall cut between them
+   * @return triple as (top, cut, bottom)
+   */
+  def splitHorizontal: (Area, Area, Area) = {
+    val half = height / 2
+    val cut = subArea(0, half, width, 1)
+    val top = subArea(0, 0, width, half)
+    val bottom = subArea(0, half + 1, width, height - half - 1)
+    (top, cut, bottom)
+  }
 }
 
 object Area {
