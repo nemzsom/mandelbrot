@@ -18,7 +18,7 @@ trait Calculator extends Renderer {
   import BorderPos._
 
   val mainArea: Area
-  val globalMaxIter = 3000 // TODO dynamic
+  val globalMaxIter = 300 // TODO dynamic
   val iterationStep = 10   // TODO dynamic?
   val maxSideSize = 10
 
@@ -27,18 +27,30 @@ trait Calculator extends Renderer {
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
   def calculate(): Unit = {
-
+    val width = mainArea.width - 2
+    val height = mainArea.height - 2
+    val borders = IndexedSeq(
+      mainArea.subArea(0, 0, 1, 1),
+      mainArea.subArea(1, 0, width, 1),
+      mainArea.subArea(width + 1, 0, 1, 1),
+      mainArea.subArea(width + 1, 1, 1, height),
+      mainArea.subArea(width + 1, height + 1, 1, 1),
+      mainArea.subArea(1, height + 1, width, 1),
+      mainArea.subArea(0, height + 1, 1, 1),
+      mainArea.subArea(0, 1, 1, height)
+    )
+    calc(borders.map(Updater(_)), Updater(mainArea.subArea(1, 1, width, height)))
   }
 
   private def calc(borders: IndexedSeq[Updater], middle: Updater): Unit = {
     val updates = borders.map(_.update)
     Future.sequence(updates).onSuccess {
       case updatedBorders: IndexedSeq[Updater] =>
-        if (updatedBorders.forall(_.area.isUniform)) {
+        /*if (updatedBorders.forall(_.area.isUniform)) {
           // uniform borders
           // TODO implement
         }
-        else if (middle.area.width < maxSideSize || middle.area.height < maxSideSize) {
+        else*/ if (middle.area.width < maxSideSize || middle.area.height < maxSideSize) {
           // non uniform borders and area reached minimal size
           recursiveUpdate(middle)
           updatedBorders.foreach(recursiveUpdate)
@@ -54,14 +66,26 @@ trait Calculator extends Renderer {
     val height = middle.area.height
     val width = middle.area.width
     if (height > width) { // horizontal cut
-      val (middleTop, middleCut, middleBottom) = middle.splitHorizontal
-      val (leftTop, leftCut, leftBottom) = borders(Left.id).splitHorizontal
-      val (rightTop, rightCut, rightBottom) = borders(Right.id).area.splitHorizontal
-      val topBorders = borders.take(3) ++ IndexedSeq(rightTop, rightCut, middleCut.update, leftCut, leftTop)
-      val bottomBorders =
+      val (mTop, mCut, mBottom) = middle.splitHorizontal
+      val (lTop, lCut, lBottom) = borders(Left.id).splitHorizontal
+      val (rTop, rCut, rBottom) = borders(Right.id).splitHorizontal
+      mCut.update.onSuccess { case mCutUpdated =>
+        val topBorders = borders.take(3) ++ IndexedSeq(rTop, rCut, mCutUpdated, lCut, lTop)
+        val bottomBorders = IndexedSeq(lCut, mCutUpdated, rCut, rBottom, borders(BottomRight.id), borders(Bottom.id), borders(BottomLeft.id), lBottom)
+        calc(topBorders, mTop)
+        calc(bottomBorders, mBottom)
+      }
     }
     else { // vertical cut
-
+      val (mLeft, mCut, mRight) = middle.splitVertical
+      val (tLeft, tCut, tRight) = borders(Top.id).splitVertical
+      val (bLeft, bCut, bRight) = borders(Bottom.id).splitVertical
+      mCut.update.onSuccess { case mCutUpdated =>
+        val leftBorders = IndexedSeq(borders(TopLeft.id), tLeft, tCut, mCutUpdated, bCut, bLeft, borders(BottomLeft.id), borders(Left.id))
+        val rightBorders = IndexedSeq(tCut, tRight, borders(TopRight.id), borders(Right.id), borders(BottomRight.id), bRight, bCut, mCutUpdated)
+        calc(leftBorders, mLeft)
+        calc(rightBorders, mRight)
+      }
     }
   }
   
@@ -74,7 +98,12 @@ trait Calculator extends Renderer {
 
     lazy val update: Future[Updater] = future {
       //println(s"Points to update at $maxIter: ${points.size}")
+
+      area.foreach( point => pixels(point.index) = 255 << 16)
+      painter.repaint()
+      debugQuene.take
       val unsettledPoints = updateAll()
+      painter.repaint() // TODO repaint only after a whole update cycle
       new Updater(area, unsettledPoints, maxIter + iterationStep)
     }
 
@@ -122,18 +151,20 @@ trait Calculator extends Renderer {
      * @param point to update
      */
     protected def iterate(point: Point): Unit = {
-      val c = point.complexValue
-      @tailrec def loop(iter: Int, z: Complex): Unit = {
-        val escaped = z.escaped
-        if (iter == maxIter || escaped) {
-          point.iter = iter
-          point.iterValue = z
-          if (escaped) point.location = Outside(iter)
+      if (point.iter < maxIter) {
+        val c = point.complexValue
+        @tailrec def loop(iter: Int, z: Complex): Unit = {
+          val escaped = z.escaped
+          if (iter == maxIter || escaped) {
+            point.iter = iter
+            point.iterValue = z
+            if (escaped) point.location = Outside(iter)
+          }
+          else loop(iter + 1, z * z + c)
         }
-        else loop(iter + 1, z * z + c)
+        val z = point.iterValue
+        loop(point.iter + 1, z * z + c)
       }
-      val z = point.iterValue
-      loop(point.iter + 1, z * z + c)
     }
 
     /** Optimization: Cardioid / bulb checking
@@ -154,9 +185,9 @@ trait Calculator extends Renderer {
 
   object Updater {
 
-    def apply(area: Area)(implicit ec: ExecutionContext) = apply(area, iterationStep)
+    def apply(area: Area)(implicit ec: ExecutionContext): Updater = apply(area, iterationStep)
 
-    def apply(area: Area, maxIter: Int)(implicit ec: ExecutionContext) = new Updater(area, area, maxIter) {
+    def apply(area: Area, maxIter: Int)(implicit ec: ExecutionContext): Updater = new Updater(area, area, maxIter) {
 
     // It handles any Point
     override def updatePoint(point: Point): Unit = {

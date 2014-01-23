@@ -1,11 +1,15 @@
 package hu.n.zs
 
+import java.util.concurrent.LinkedBlockingQueue
+
 package object mandelbrot {
 
   private val debugX = -1
   private val debugY = -1
 
   var debugPointCoords: (Int, Int) = null
+
+  val debugQuene = new LinkedBlockingQueue[Any]
 
   def setDebugArea(area: Area): Unit = {
     try {
