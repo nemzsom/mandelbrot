@@ -19,8 +19,8 @@ trait Calculator extends Renderer {
 
   val mainArea: Area
   val globalMaxIter = 300 // TODO dynamic
-  val iterationStep = 10   // TODO dynamic?
-  val maxSideSize = 10
+  val iterationStep = 30   // TODO dynamic?
+  val maxDividable = 9
 
   val numOfProcs = Runtime.getRuntime.availableProcessors
   val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
@@ -39,70 +39,93 @@ trait Calculator extends Renderer {
       mainArea.subArea(0, height + 1, 1, 1),
       mainArea.subArea(0, 1, 1, height)
     )
-    calc(borders.map(Updater(_)), Updater(mainArea.subArea(1, 1, width, height)))
+    calc(borders.map(Updater(_).update), Updater(mainArea.subArea(1, 1, width, height)))
   }
 
-  private def calc(borders: IndexedSeq[Updater], middle: Updater): Unit = {
-    val updates = borders.map(_.update)
-    Future.sequence(updates).onSuccess {
+  private def calc(borders: IndexedSeq[Future[Updater]], middle: Updater): Unit = {
+    Future.sequence(borders).onSuccess {
       case updatedBorders: IndexedSeq[Updater] =>
-        /*if (updatedBorders.forall(_.area.isUniform)) {
-          // uniform borders
-          // TODO implement
+        val loc = updatedBorders.head.area.topLeft.location
+        val allUniform = updatedBorders.tail.map(_.area).forall { a =>
+          a.topLeft.location == loc && a.isUniform
         }
-        else*/ if (middle.area.width < maxSideSize || middle.area.height < maxSideSize) {
+        if (allUniform) {
+          // uniform borders
+          println(s"UNIFORM BORDERS for middle $middle and its borders.")
+          handleUniform(updatedBorders, middle, loc)
+        }
+        else if (math.max(middle.area.width, middle.area.height) < maxDividable) {
           // non uniform borders and area reached minimal size
+          println(s"RECURSIVE update for middle $middle and its borders.")
           recursiveUpdate(middle)
           updatedBorders.foreach(recursiveUpdate)
         }
         else {
           // non uniform borders and area can further divided
+          println(s"DIVIDE for middle $middle and its borders. (head: ${borders.head}})")
           divideAndCalc(updatedBorders, middle)
         }
     }
   }
 
+  def handleUniform(borders: IndexedSeq[Updater], middle: Updater, loc: PointLoc): Unit =
+    if (loc == Unsettled) calc(borders.map(_.update), middle)
+    else { // Outside(iter) or Inside
+      //println(s"MASS coloring for middle $middle.")
+      middle.area.foreach { p =>
+        p.location = loc
+        color(p)
+      }
+    }
+
   private def divideAndCalc(borders: IndexedSeq[Updater], middle: Updater) {
     val height = middle.area.height
     val width = middle.area.width
+    val maxIter = borders.head.maxIter
     if (height > width) { // horizontal cut
       val (mTop, mCut, mBottom) = middle.splitHorizontal
       val (lTop, lCut, lBottom) = borders(Left.id).splitHorizontal
       val (rTop, rCut, rBottom) = borders(Right.id).splitHorizontal
-      mCut.update.onSuccess { case mCutUpdated =>
+      Updater(mCut.area, maxIter - iterationStep).update.onSuccess { case mCutUpdated =>
         val topBorders = borders.take(3) ++ IndexedSeq(rTop, rCut, mCutUpdated, lCut, lTop)
         val bottomBorders = IndexedSeq(lCut, mCutUpdated, rCut, rBottom, borders(BottomRight.id), borders(Bottom.id), borders(BottomLeft.id), lBottom)
-        calc(topBorders, mTop)
-        calc(bottomBorders, mBottom)
+        calc(topBorders.map(b => Future.successful(b)), mTop)
+        calc(bottomBorders.map(b => Future.successful(b)), mBottom)
       }
     }
     else { // vertical cut
       val (mLeft, mCut, mRight) = middle.splitVertical
       val (tLeft, tCut, tRight) = borders(Top.id).splitVertical
       val (bLeft, bCut, bRight) = borders(Bottom.id).splitVertical
-      mCut.update.onSuccess { case mCutUpdated =>
+      Updater(mCut.area, maxIter - iterationStep).update.onSuccess { case mCutUpdated =>
         val leftBorders = IndexedSeq(borders(TopLeft.id), tLeft, tCut, mCutUpdated, bCut, bLeft, borders(BottomLeft.id), borders(Left.id))
         val rightBorders = IndexedSeq(tCut, tRight, borders(TopRight.id), borders(Right.id), borders(BottomRight.id), bRight, bCut, mCutUpdated)
-        calc(leftBorders, mLeft)
-        calc(rightBorders, mRight)
+        calc(leftBorders.map(b => Future.successful(b)), mLeft)
+        calc(rightBorders.map(b => Future.successful(b)), mRight)
       }
     }
   }
   
 
   private def recursiveUpdate(updater: Updater): Unit =  if (updater.maxIter < globalMaxIter && !updater.points.isEmpty) {
+    println("resurse")
     updater.update.onSuccess { case u => recursiveUpdate(u) }
   }
 
   class Updater private(val area: Area, val points: Traversable[Point], val maxIter: Int)(implicit ec: ExecutionContext) {
 
     lazy val update: Future[Updater] = future {
-      //println(s"Points to update at $maxIter: ${points.size}")
-
-      area.foreach( point => pixels(point.index) = 255 << 16)
-      painter.repaint()
-      debugQuene.take
+      // debug BEGIN
+//      print(s"UPDATE $this")
+//      area.foreach( point => pixels(point.index) = 255 << 16)
+//      painter.repaint()
+//      debugQuene.take
+      // debug END
       val unsettledPoints = updateAll()
+      // debug BEGIN
+//      area foreach color
+//      println(" DONE")
+//      // debug END
       painter.repaint() // TODO repaint only after a whole update cycle
       new Updater(area, unsettledPoints, maxIter + iterationStep)
     }
@@ -180,6 +203,9 @@ trait Calculator extends Renderer {
 
       def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
     }
+
+    override def toString: String =
+      s"Updater for $area, points size: ${points.size}, maxIter: $maxIter, id: ${hashCode}"
 
   }
 

@@ -166,9 +166,9 @@ class AreaTest extends FunSuite {
     assert(right.width === 2)
     assert(cut.width === 1)
     assert(left.width === 2)
-    assert(right.map(_.index).toSet === (for (x <- (0 until 2); y <- (0 until 10)) yield(y * 5 + x)).toSet)
-    assert(cut.map(_.index).toSet === (for (y <- (0 until 10)) yield(y * 5 + 2)).toSet)
-    assert(left.map(_.index).toSet === (for (x <- (3 until 5); y <- (0 until 10)) yield(y * 5 + x)).toSet)
+    assert(right.map(_.index).toSet === (for (x <- 0 until 2; y <- 0 until 10) yield y * 5 + x).toSet)
+    assert(cut.map(_.index).toSet === (for (y <- 0 until 10) yield y * 5 + 2).toSet)
+    assert(left.map(_.index).toSet === (for (x <- 3 until 5; y <- 0 until 10) yield y * 5 + x).toSet)
   }
 
   test("split vertical with even width") {
@@ -178,8 +178,8 @@ class AreaTest extends FunSuite {
     assert(right.width === 2)
     assert(cut.width === 1)
     assert(left.width === 1)
-    assert(right.map(_.index).toSet === (for (x <- (0 until 2); y <- (0 until 10)) yield(y * 4 + x)).toSet)
-    assert(cut.map(_.index).toSet === (for (y <- (0 until 10)) yield(y * 4 + 2)).toSet)
-    assert(left.map(_.index).toSet === (for (y <- (0 until 10)) yield(y * 4 + 3)).toSet)
+    assert(right.map(_.index).toSet === (for (x <- 0 until 2; y <- 0 until 10) yield y * 4 + x).toSet)
+    assert(cut.map(_.index).toSet === (for (y <- 0 until 10) yield y * 4 + 2).toSet)
+    assert(left.map(_.index).toSet === (for (y <- 0 until 10) yield y * 4 + 3).toSet)
   }
 }

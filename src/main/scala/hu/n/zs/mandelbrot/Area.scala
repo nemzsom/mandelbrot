@@ -16,7 +16,7 @@ class Point (val x: Int, val y: Int, val complexValue: Complex, val index: Int) 
   var location: PointLoc = Unsettled
 
   override def toString: String = {
-    s"Point($x, $y, iter: $iter, iterValue: $iterValue, loc: $location)"
+    s"Point($x, $y, complexValue: $complexValue, iter: $iter, iterValue: $iterValue, loc: $location, index: $index)"
   }
 }
 
@@ -78,6 +78,8 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     val bottom = subArea(0, half + 1, width, height - half - 1)
     (top, cut, bottom)
   }
+
+  override def toString: String = s"Area($topLeft, width: $width, height: $height)"
 }
 
 object Area {

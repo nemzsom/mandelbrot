@@ -14,10 +14,6 @@ import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
 object MandelbrotApp extends SimpleSwingApplication {
 
-  /*val numOfProcs = Runtime.getRuntime.availableProcessors
-  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs *2).asInstanceOf[ThreadPoolExecutor]
-  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)*/
-
   lazy val ui = new Panel with Calculator with Renderer {
 
     val width = 1000
@@ -36,9 +32,9 @@ object MandelbrotApp extends SimpleSwingApplication {
     listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
 
     reactions += {
-      case e: MousePressed => println(s"clicked: ${e.point}"); debugQuene.put(0)
+      case e: MousePressed => /*println(s"clicked: ${e.point}");*/ debugQuene.put(0)
       case e: MouseDragged =>
-      case e: MouseWheelMoved =>
+      case e: MouseWheelMoved => (1 to 10).foreach(debugQuene.put(_))
       case _: UIElementResized =>
       case _: FocusLost => repaint()
     }
