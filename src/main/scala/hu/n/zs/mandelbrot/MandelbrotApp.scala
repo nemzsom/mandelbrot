@@ -28,6 +28,8 @@ object MandelbrotApp extends SimpleSwingApplication {
     val pixels = databuffer.getData
     val painter = this
 
+    for (i <- pixels.indices) (pixels(i) = 0x00bebebe)
+
     focusable = true
     listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
 

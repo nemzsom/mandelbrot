@@ -50,10 +50,10 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     new Area(scale, data, lineStride, indexFor(x, y), width, height)
   }
 
-  def isUniform: Boolean = {
+  /*def isUniform: Boolean = {
     val loc = topLeft.location
     forall(_.location == loc)
-  }
+  }*/
 
   /**
    * Splits this area into 3 pieces: 2 pieces as left and right, and an 1px wide cut between them
@@ -78,6 +78,8 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     val bottom = subArea(0, half + 1, width, height - half - 1)
     (top, cut, bottom)
   }
+
+  override def size: Int = width * height
 
   override def toString: String = s"Area($topLeft, width: $width, height: $height)"
 }

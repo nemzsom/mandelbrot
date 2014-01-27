@@ -9,6 +9,8 @@ package object mandelbrot {
 
   var debugPointCoords: (Int, Int) = null
 
+  var debugTime = 0L
+
   val debugQuene = new LinkedBlockingQueue[Any]
 
   def setDebugArea(area: Area): Unit = {
