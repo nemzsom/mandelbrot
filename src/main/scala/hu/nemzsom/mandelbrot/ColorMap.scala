@@ -1,13 +1,13 @@
-package hu.n.zs.mandelbrot
+package hu.nemzsom.mandelbrot
 
 trait ColorMap {
 
-  val nOfColors: Int = 2
+  val nOfColors: Int = 3
 
   def color(point: Point): Int = {
     point.location match {
       case Inside => 0
-      case Outside(iter) => if (iter % 2 == 0) 0 else 0xFFFFFFFF
+      case Outside(iter) => colorMap(iter % nOfColors)
       case Unsettled => 255
     }
   }

@@ -1,4 +1,4 @@
-package hu.n.zs.mandelbrot
+package hu.nemzsom.mandelbrot
 
 import scala.collection.Iterator
 import scala.collection.immutable.Iterable

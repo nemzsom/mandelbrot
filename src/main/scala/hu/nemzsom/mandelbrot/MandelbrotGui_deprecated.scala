@@ -1,4 +1,4 @@
-package hu.n.zs.mandelbrot
+package hu.nemzsom.mandelbrot
 
 import scala.swing.Swing._
 import scala.swing._
@@ -75,7 +75,7 @@ object MandelbrotGui_deprecated extends SimpleSwingApplication {
       var time = System.nanoTime
       area.foreach { case (Point_deprecated(x, y), complex) =>
         val iter = mandelbrot(complex)
-        bufferedImage.setRGB(x, y, if (iter % 2 == 0) 0 else 0xFFFFFFFF/*colorMap(iter)*/)
+        bufferedImage.setRGB(x, y, /*if (iter % 2 == 0) 0 else 0xFFFFFFFF*/colorMap(iter))
       }
       time = System.nanoTime - time
       println(s"render time: ${time / 1000000} ms")

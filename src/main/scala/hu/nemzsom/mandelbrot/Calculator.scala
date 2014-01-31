@@ -1,4 +1,4 @@
-package hu.n.zs.mandelbrot
+package hu.nemzsom.mandelbrot
 
 import scala.annotation.tailrec
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
@@ -21,7 +21,7 @@ trait Calculator extends Renderer {
   import BorderPos._
 
   val mainArea: Area
-  val globalMaxIter = 3000 // TODO dynamic
+  val globalMaxIter = 300 // TODO dynamic
   val iterationStep = 30   // TODO dynamic?
   val maxDividable = 17
   val updaters = new AtomicInteger(0)
@@ -207,7 +207,7 @@ trait Calculator extends Renderer {
     }
 
     /**
-     * Updates one point to maxIter. The default implementation expects only [[hu.n.zs.mandelbrot.Unsettled]] points
+     * Updates one point to maxIter. The default implementation expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
      * @param point to update
      */
     protected def updatePoint(point: Point): Unit = {

@@ -1,4 +1,4 @@
-package hu.n.zs.mandelbrot
+package hu.nemzsom.mandelbrot
 
 import org.scalatest.FunSuite
 

@@ -1,10 +1,10 @@
-package hu.n.zs.sandbox
+package hu.nemzsom.sandbox
 
 import scala.swing.Swing._
 import scala.swing.{Component, MainFrame, Panel, SimpleSwingApplication}
 import java.awt.{Color, Graphics2D}
 import java.awt.image.{DataBufferInt, BufferedImage}
-import hu.n.zs.mandelbrot.{Area, Point}
+import hu.nemzsom.mandelbrot.{Area, Point}
 import scala.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ThreadPoolExecutor, Executors}

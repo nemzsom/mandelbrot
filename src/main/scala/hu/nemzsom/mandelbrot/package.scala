@@ -1,4 +1,4 @@
-package hu.n.zs
+package hu.nemzsom
 
 import java.util.concurrent.LinkedBlockingQueue
 

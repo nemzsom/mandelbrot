@@ -1,4 +1,4 @@
-package hu.n.zs.sandbox
+package hu.nemzsom.sandbox
 
 import scala.swing.Swing._
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication}

@@ -1,4 +1,4 @@
-package hu.n.zs.mandelbrot
+package hu.nemzsom.mandelbrot
 
 import scala.swing.Swing._
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication}
@@ -9,15 +9,13 @@ import scala.swing.event.MouseWheelMoved
 import scala.swing.event.MouseDragged
 import scala.swing.event.UIElementResized
 import java.awt.image.{DataBufferInt, BufferedImage}
-import scala.concurrent.ExecutionContext
-import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
 object MandelbrotApp extends SimpleSwingApplication {
 
   lazy val ui = new Panel with Calculator with Renderer {
 
-    val width = 1000
-    val height = 1000
+    val width = 200
+    val height = 200
     val mainArea = Area(Complex(-2, -2), 4, width, height)
     setDebugArea(mainArea)
 
