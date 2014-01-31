@@ -2,18 +2,23 @@ package hu.nemzsom.mandelbrot
 
 trait ColorMap {
 
-  val nOfColors: Int = 3
+  def color(point: Point): Int
+}
 
-  def color(point: Point): Int = {
-    point.location match {
-      case Inside => 0
-      case Outside(iter) => colorMap(iter % nOfColors)
-      case Unsettled => 255
-    }
+class Black_and_WhiteColorMap extends ColorMap {
+
+  def color(point: Point): Int = point.location match {
+    case Inside => 0
+    case Outside(iter) => if (iter % 2 == 0) 0 else 0xFFFFFFFF
+    case Unsettled => 255
   }
+}
 
-  lazy val colorMap: Array[Int] = {
-    require(nOfColors % 3 == 0)
+class LinearColorMap(nOfColors: Int) extends ColorMap {
+
+  require(nOfColors % 3 == 0) // TODO allow numbers that isn't divisible by 3
+
+  val colorMap: Array[Int] = {
     val third = nOfColors / 3
     val r, g, b = new Array[Int](third)
 
@@ -32,21 +37,10 @@ trait ColorMap {
 
     r ++ g ++ b :+ 0
   }
-}
 
-object Test extends App {
-  val cm = new ColorMap {}
-  Util.print(cm.colorMap)
-}
-
-object Util {
-
-  def print(arr: Array[Int], msg: String = "Array"): Unit = {
-    println(s"$msg: size: ${arr.size}")
-    arr.foreach(println(_))
-    println("-------------------------------")
-  }
-  def p(n: Int): String = {
-    f"${Integer.toBinaryString(n)}%32s" replace(' ', '0')
+  def color(point: Point): Int = point.location match {
+    case Inside => 0
+    case Outside(iter) => colorMap(iter % nOfColors)
+    case Unsettled => 255
   }
 }

@@ -5,37 +5,17 @@ import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import scala.concurrent._
 import scala.math._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import javax.swing.Timer
 import java.awt.event.{ActionEvent, ActionListener}
-
-object BorderPos extends Enumeration {
-  type BorderPos = Value
-  val TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left = Value
-}
+import rx.lang.scala.Observable
 
 /**
  * It can calculate an area's points.
  */
-trait Calculator extends Renderer {
+class Calculator(mainArea: Area)(implicit val ec: ExecutionContext) {
 
-  import BorderPos._
-
-  val mainArea: Area
-  val globalMaxIter = 300 // TODO dynamic
-  val iterationStep = 30   // TODO dynamic?
   val maxDividable = 17
-  val updaters = new AtomicInteger(0)
-  val paintTimer = new Timer(100, new ActionListener {
-    def actionPerformed(e: ActionEvent): Unit = painter.repaint()
-  })
-  paintTimer.setInitialDelay(300)
-  paintTimer.start()
 
-  val numOfProcs = Runtime.getRuntime.availableProcessors
-  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
-  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
-
-  def calculate(): Unit = {
+  def calculate(): Observable[(Int, Int)] = {
     debugTime = System.nanoTime
     val width = mainArea.width - 2
     val height = mainArea.height - 2

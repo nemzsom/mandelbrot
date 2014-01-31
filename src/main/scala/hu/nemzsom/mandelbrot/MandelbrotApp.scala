@@ -9,8 +9,14 @@ import scala.swing.event.MouseWheelMoved
 import scala.swing.event.MouseDragged
 import scala.swing.event.UIElementResized
 import java.awt.image.{DataBufferInt, BufferedImage}
+import java.util.concurrent.{Executors, ThreadPoolExecutor}
+import scala.concurrent.ExecutionContext
 
 object MandelbrotApp extends SimpleSwingApplication {
+
+  val numOfProcs = Runtime.getRuntime.availableProcessors
+  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
+  implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
   lazy val ui = new Panel with Calculator with Renderer {
 

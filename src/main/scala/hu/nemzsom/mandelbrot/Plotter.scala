@@ -8,7 +8,7 @@ trait Plotter {
 
 }
 
-class BImagePlotter(img: BufferedImage) extends Plotter with ColorMap {
+class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
 
   val pixels = {
     val raster = img.getRaster
@@ -16,5 +16,5 @@ class BImagePlotter(img: BufferedImage) extends Plotter with ColorMap {
     databuffer.getData
   }
 
-  def plot(p: Point): Unit = pixels(p.index) = color(p)
+  def plot(p: Point): Unit = pixels(p.index) = colorMap.color(p)
 }
