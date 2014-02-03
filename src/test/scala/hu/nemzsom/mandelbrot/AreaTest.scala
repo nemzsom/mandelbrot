@@ -135,51 +135,45 @@ class AreaTest extends FunSuite {
     }
   }
 
-  test("split horizontal with odd height") {
-    val area: Area = Area((0, 0), 1, 10, 5)
-    val (top, cut, bottom) = area.splitHorizontal
-    assert(Seq(top, cut, bottom).forall(_.width == 10))
-    assert(top.height === 2)
-    assert(cut.height === 1)
-    assert(bottom.height === 2)
-    assert(top.map(_.index).toSet == (0 until 20).toSet)
-    assert(cut.map(_.index).toSet == (20 until 30).toSet)
-    assert(bottom.map(_.index).toSet == (30 until 50).toSet)
-  }
-
-  test("split horizontal with even height") {
-    val area: Area = Area((0, 0), 1, 10, 4)
-    val (top, cut, bottom) = area.splitHorizontal
-    assert(Seq(top, cut, bottom).forall(_.width == 10))
-    assert(top.height === 2)
-    assert(cut.height === 1)
-    assert(bottom.height === 1)
-    assert(top.map(_.index).toSet == (0 until 20).toSet)
-    assert(cut.map(_.index).toSet == (20 until 30).toSet)
-    assert(bottom.map(_.index).toSet == (30 until 40).toSet)
+  test("split vertical with even width") {
+    val area: Area = Area((0, 0), 1, 2, 1)
+    val (left, right) = area.split
+    assert(Seq(left, right).forall(a => a.width == 1 && a.height == 1))
+    assert(left.topLeft.index === 0)
+    assert(right.topLeft.index === 1)
   }
 
   test("split vertical with odd width") {
-    val area: Area = Area((0, 0), 1, 5, 10)
-    val (right, cut, left) = area.splitVertical
-    assert(Seq(right, cut, left).forall(_.height == 10))
-    assert(right.width === 2)
-    assert(cut.width === 1)
-    assert(left.width === 2)
-    assert(right.map(_.index).toSet === (for (x <- 0 until 2; y <- 0 until 10) yield y * 5 + x).toSet)
-    assert(cut.map(_.index).toSet === (for (y <- 0 until 10) yield y * 5 + 2).toSet)
-    assert(left.map(_.index).toSet === (for (x <- 3 until 5; y <- 0 until 10) yield y * 5 + x).toSet)
+    val area: Area = Area((0, 0), 1, 3, 1)
+    val (left, right) = area.split
+    assert(Seq(left, right).forall(a => a.height == 1))
+    assert(Seq(left, right).map(_.width) === Seq(1, 2))
+    assert(left.topLeft.index === 0)
+    assert(right.map(_.index) === Seq(1, 2))
   }
 
-  test("split vertical with even width") {
-    val area: Area = Area((0, 0), 1, 4, 10)
-    val (right, cut, left) = area.splitVertical
-    assert(Seq(right, cut, left).forall(_.height == 10))
-    assert(right.width === 2)
-    assert(cut.width === 1)
-    assert(left.width === 1)
-    assert(right.map(_.index).toSet === (for (x <- 0 until 2; y <- 0 until 10) yield y * 4 + x).toSet)
-    assert(cut.map(_.index).toSet === (for (y <- 0 until 10) yield y * 4 + 2).toSet)
-    assert(left.map(_.index).toSet === (for (y <- 0 until 10) yield y * 4 + 3).toSet)
+  test("split horizontal with even width") {
+    val area: Area = Area((0, 0), 1, 1, 2)
+    val (top, bottom) = area.split
+    assert(Seq(top, bottom).forall(a => a.width == 1 && a.height == 1))
+    assert(top.topLeft.index === 0)
+    assert(bottom.topLeft.index === 1)
+  }
+
+  test("split horizontal with odd width") {
+    val area: Area = Area((0, 0), 1, 1, 3)
+    val (top, bottom) = area.split
+    assert(Seq(top, bottom).forall(a => a.width == 1))
+    assert(Seq(top, bottom).map(_.height) === Seq(1, 2))
+    assert(top.topLeft.index === 0)
+    assert(bottom.map(_.index) === Seq(1, 2))
+  }
+
+  test("borders") {
+    new TestArea {
+      val borderIndexes = area.borders.map(_.index)
+      assert(borderIndexes.size === borderIndexes.toSet.size) // no duplicates
+      assert(borderIndexes.toSet === Set(0, 1, 2, 3, 5, 6, 7, 8))
+    }
   }
 }

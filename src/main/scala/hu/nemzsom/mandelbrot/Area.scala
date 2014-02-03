@@ -40,9 +40,15 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
   def pointAt(x: Int, y: Int): Point = data(indexFor(x, y))
 
-  def foreach[U](f: Point => U): Unit = {
+  def foreach[U](f: (Point) => U): Unit =
     for (x <- 0 until width; y <- 0 until height) {
       f(pointAt(x, y))
+    }
+
+  def borders: Traversable[Point] = new Traversable[Point] {
+    override def foreach[U](f: (Point) => U): Unit = {
+      for (x <- 0 until width) { f(pointAt(x, 0)); f(pointAt(x, height - 1)) }
+      for (y <- 1 until height - 1) { f(pointAt(0, y)); f(pointAt(width - 1, y)) }
     }
   }
 
@@ -50,33 +56,23 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     new Area(scale, data, lineStride, indexFor(x, y), width, height)
   }
 
-  /*def isUniform: Boolean = {
-    val loc = topLeft.location
-    forall(_.location == loc)
-  }*/
-
   /**
-   * Splits this area into 3 pieces: 2 pieces as left and right, and an 1px wide cut between them
-   * @return triple as (left, cut, right)
+   * Splits this area into 2 pieces among the longer side.
+   * @return tuple as (left, right) or (top, bottom)
    */
-  def splitVertical: (Area, Area, Area) = {
-    val half = width / 2
-    val cut = subArea(half, 0, 1, height)
-    val left = subArea(0, 0, half, height)
-    val right = subArea(half + 1, 0, width - half - 1, height)
-    (left, cut, right)
-  }
-
-  /**
-   * Splits this area into 3 pieces: 2 pieces as top and bottom, and the 1px tall cut between them
-   * @return triple as (top, cut, bottom)
-   */
-  def splitHorizontal: (Area, Area, Area) = {
-    val half = height / 2
-    val cut = subArea(0, half, width, 1)
-    val top = subArea(0, 0, width, half)
-    val bottom = subArea(0, half + 1, width, height - half - 1)
-    (top, cut, bottom)
+  def split: (Area, Area) = {
+    if (width > height) { // split horizontal
+      val half = width / 2
+      val left = subArea(0, 0, half, height)
+      val right = subArea(half, 0, width - half, height)
+      (left, right)
+    }
+    else { // split vertical
+      val half = height / 2
+      val top = subArea(0, 0, width, half)
+      val bottom = subArea(0, half, width, height - half)
+      (top, bottom)
+    }
   }
 
   override def size: Int = width * height

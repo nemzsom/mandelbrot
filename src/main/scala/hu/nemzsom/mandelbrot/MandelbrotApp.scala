@@ -18,7 +18,7 @@ object MandelbrotApp extends SimpleSwingApplication {
   val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  lazy val ui = new Panel with Calculator with Renderer {
+  /*lazy val ui = new Panel with Calculator with Renderer {
 
     val width = 200
     val height = 200
@@ -49,11 +49,11 @@ object MandelbrotApp extends SimpleSwingApplication {
       super.paintComponent(g)
       g.drawImage(image, 0, 0, image.getWidth, image.getHeight, null)
     }
-  }
+  }*/
 
   def top = new MainFrame {
     title = "Mandelbrot set"
-    ui.calculate()
-    contents = ui
+    /*ui.calculate()
+    contents = ui*/
   }
 }

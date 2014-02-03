@@ -1,206 +1,88 @@
 package hu.nemzsom.mandelbrot
 
 import scala.annotation.tailrec
-import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import scala.concurrent._
 import scala.math._
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import java.awt.event.{ActionEvent, ActionListener}
-import rx.lang.scala.Observable
+import rx.lang.scala.{Subscription, Observer, Observable}
 
 /**
- * It can calculate an area's points.
+ * It calculate an area's points.
  */
-class Calculator(mainArea: Area)(implicit val ec: ExecutionContext) {
+class Calculator(mainArea: Area, plotter: Plotter)(implicit val ec: ExecutionContext) {
 
-  val maxDividable = 17
-
-  def calculate(): Observable[(Int, Int)] = {
-    debugTime = System.nanoTime
-    val width = mainArea.width - 2
-    val height = mainArea.height - 2
-    val borders = IndexedSeq(
-      mainArea.subArea(0, 0, 1, 1),
-      mainArea.subArea(1, 0, width, 1),
-      mainArea.subArea(width + 1, 0, 1, 1),
-      mainArea.subArea(width + 1, 1, 1, height),
-      mainArea.subArea(width + 1, height + 1, 1, 1),
-      mainArea.subArea(1, height + 1, width, 1),
-      mainArea.subArea(0, height + 1, 1, 1),
-      mainArea.subArea(0, 1, 1, height)
-    )
-    updateStarted(8)
-    calc(borders.map(Updater(_).update), Updater(mainArea.subArea(1, 1, width, height)), iterationStep)
+  private object Config {
+    val maxDividableSize = 17
+    val iterationStep = 10
   }
 
-  private def calc(borders: IndexedSeq[Future[Updater]], middle: Updater, maxIter: Int): Unit = {
-    Future.sequence(borders).onSuccess {
-      case updatedBorders: IndexedSeq[Updater] =>
-        if (checkAllUniform(updatedBorders, maxIter)) {
-          // uniform borders
-          //println(s"UNIFORM BORDERS for middle $middle and its borders (at $maxIter maxIter).")
-          handleUniform(updatedBorders, middle, maxIter)
-        }
-        else if (math.max(middle.area.width, middle.area.height) < maxDividable) {
-          // non uniform borders and area reached minimal size
-          //println(s"RECURSIVE update for middle $middle and its borders. (at $maxIter maxIter)")
-          updateStarted(1)
-          recursiveUpdate(middle)
-          updatedBorders.foreach(recursiveUpdate)
+  import Config._
+
+  case class CalcStat(val all: Int, val settled: Int, val maxIter: Int)
+
+  private class IterationCycle(val maxIter: Int) {
+
+    lazy val next: IterationCycle = new IterationCycle(maxIter + iterationStep)
+  }
+
+  private val subscription: Subscription = new Subscription {}
+
+  def calculate(): Observable[CalcStat] = Observable.create(
+    (observer: Observer[CalcStat]) => {
+      subscription
+    }
+  )
+
+  private def calc(area: Area, cycle: IterationCycle): Unit = {
+    val (CalcStat(pointsCount, settled, _), _) = update(area.borders, cycle)
+    // uniform Unsettled borders
+    if (settled == 0) {
+      calc(area, cycle.next)
+    }
+    // uniform Outside borders
+    else if (pointsCount == settled && isUniform(area.borders)) {
+      val loc = area.topLeft.location
+      area.subArea(1,1, area.width - 2, area.height - 2).foreach { point =>
+        point.location = loc
+        plotter.plot(point)
+      }
+    }
+    else if (area.width > maxDividableSize || area.height > maxDividableSize)
+  }
+
+  private def isUniform(points: Traversable[Point]): Boolean =
+    points.forall(_.location == points.head.location)
+
+  private class Updater(points: Traversable[Point], cycle: IterationCycle) {
+
+    private def update(): (CalcStat, Traversable[Point]) = {
+      var pointsCount = 0
+      var settled = 0
+      var unsettledPoints = List.empty[Point]
+      points.foreach { point =>
+        pointsCount += 1
+        iterate(point, cycle.maxIter)
+        if (point.location == Unsettled){
+          unsettledPoints = point :: unsettledPoints
         }
         else {
-          // non uniform borders and area can further divided
-          //println(s"DIVIDE for middle $middle and its borders. (head: ${borders.head}}), (at $maxIter maxIter)")
-          divideAndCalc(updatedBorders, middle, maxIter)
+          settled += 1
+          plotter.plot(point)
         }
-    }
-  }
-
-  def checkAllUniform(borders: IndexedSeq[Updater], atIter: Int): Boolean = {
-    val loc = getLocAt(borders.head.area.topLeft, atIter)
-    borders.tail.map(_.area).forall { area =>
-      area.forall ( getLocAt(_, atIter) == loc )
-    }
-  }
-
-  def handleUniform(borders: IndexedSeq[Updater], middle: Updater, atIter: Int): Unit =
-    if (atIter < globalMaxIter) {
-      val loc = getLocAt(borders.head.area.topLeft, atIter)
-      if (loc == Unsettled) calc(borders.map(_.update), middle, atIter + iterationStep)
-      else { // Outside(iter) or Inside
-        //println(s"MASS coloring for middle $middle.  (at $atIter atIter)")
-        middle.area.foreach { p =>
-          p.location = loc
-          color(p)
-        }
-        updateEnded(8)
       }
-    }
-    else {
-      (middle +: borders).map(_.area).foreach { area =>
-        area.foreach(color)
-      }
-      updateEnded(8)
-    }
-
-  private def divideAndCalc(borders: IndexedSeq[Updater], middle: Updater, maxIter: Int) {
-    updateStarted(8)
-    val height = middle.area.height
-    val width = middle.area.width
-    if (height > width) { // horizontal cut
-    val (mTop, mCut, mBottom) = middle.splitHorizontal
-    val (lTop, lCut, lBottom) = borders(Left.id).splitHorizontal
-    val (rTop, rCut, rBottom) = borders(Right.id).splitHorizontal
-    Updater(mCut.area, maxIter).update.onSuccess { case mCutUpdated =>
-      val topBorders = borders.take(3) ++ IndexedSeq(rTop, rCut, mCutUpdated, lCut, lTop)
-      val bottomBorders = IndexedSeq(lCut, mCutUpdated, rCut, rBottom, borders(BottomRight.id), borders(Bottom.id), borders(BottomLeft.id), lBottom)
-      calc(topBorders.map(b => Future.successful(b)), mTop, maxIter)
-      calc(bottomBorders.map(b => Future.successful(b)), mBottom, maxIter)
-      }
-    }
-    else { // vertical cut
-      val (mLeft, mCut, mRight) = middle.splitVertical
-      val (tLeft, tCut, tRight) = borders(Top.id).splitVertical
-      val (bLeft, bCut, bRight) = borders(Bottom.id).splitVertical
-      Updater(mCut.area, maxIter).update.onSuccess { case mCutUpdated =>
-        val leftBorders = IndexedSeq(borders(TopLeft.id), tLeft, tCut, mCutUpdated, bCut, bLeft, borders(BottomLeft.id), borders(Left.id))
-        val rightBorders = IndexedSeq(tCut, tRight, borders(TopRight.id), borders(Right.id), borders(BottomRight.id), bRight, bCut, mCutUpdated)
-        calc(leftBorders.map(b => Future.successful(b)), mLeft, maxIter)
-        calc(rightBorders.map(b => Future.successful(b)), mRight, maxIter)
-      }
-    }
-  }
-
-  private def getLocAt(point: Point, iter: Int): PointLoc = point.location match {
-    case Outside(i) if (i > iter) => Unsettled
-    case loc => loc
-  }
-  
-
-  private def recursiveUpdate(updater: Updater): Unit =
-    if (updater.maxIter < globalMaxIter && !updater.points.isEmpty) {
-      //println("recurse")
-      updater.update.onSuccess { case u => recursiveUpdate(u) }
-    } else {
-      updater.points.foreach(color)
-      updateEnded(1)
-    }
-
-  private def updateStarted(amount: Int): Unit = updaters.addAndGet(amount)
-
-  private def updateEnded(amount: Int): Unit =  {
-    val processes = updaters.addAndGet(-amount)
-    if (processes == 0) {
-      painter.repaint()
-      println(s"Done in ${(System.nanoTime - debugTime) / 1000000} ms")
-      paintTimer.stop()
-    }
-  }
-
-  class Updater private(val area: Area, val points: Traversable[Point], val maxIter: Int)(implicit ec: ExecutionContext) {
-
-    lazy val update: Future[Updater] = future {
-      // debug BEGIN
-//      print(s"UPDATE $this")
-//      area.foreach( point => pixels(point.index) = 255 << 16)
-//      painter.repaint()
-//      debugQuene.take
-      // debug END
-      val unsettledPoints = updateAll()
-      // debug BEGIN
-//      area foreach color
-//      println(" DONE")
-      // debug END
-      //painter.repaint() // TODO repaint only after a whole update cycle
-      new Updater(area, unsettledPoints, maxIter + iterationStep)
-    }
-
-    def splitVertical: (Updater, Updater, Updater) = {
-      val (leftArea, cutArea, rightArea) = area.splitVertical
-      (
-        Updater(leftArea, maxIter),
-        Updater(cutArea, maxIter),
-        Updater(rightArea, maxIter)
-        )
-    }
-
-    def splitHorizontal: (Updater, Updater, Updater) = {
-      val (topArea, cutArea, bottomArea) = area.splitHorizontal
-      (
-        Updater(topArea, maxIter),
-        Updater(cutArea, maxIter),
-        Updater(bottomArea, maxIter)
-        )
-    }
-
-    private def updateAll(): Traversable[Point] = {
-      var unsettledPoints = List.empty[Point]
-      points.foreach {
-        point =>
-          updatePoint(point)
-          if (point.location == Unsettled)
-            unsettledPoints = point :: unsettledPoints
-          else
-            color(point)
-      }
-      unsettledPoints
+      (CalcStat(pointsCount, settled, cycle.maxIter), unsettledPoints)
     }
 
     /**
-     * Updates one point to maxIter. The default implementation expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
+     * Performs the mandelbrot iteration on one point to the specified maxIteration.
      * @param point to update
+     * @return true if the point escaped
      */
-    protected def updatePoint(point: Point): Unit = {
-      iterate(point)
-    }
-
-    /**
-     * Performs the mandelbrot iteration on one point
-     * @param point to update
-     */
-    protected def iterate(point: Point): Unit = {
-      if (point.iter < maxIter) {
-        val c = point.complexValue
+    protected def iterate(point: Point, maxIter: Int): Unit = if (point.iter < maxIter) {
+      val c = point.complexValue
+      if (point.iter == 0 && preCheck_isInside(c)){
+        point.location = Inside
+      }
+      else {
         @tailrec def loop(iter: Int, z: Complex): Unit = {
           val escaped = z.escaped
           if (iter == maxIter || escaped) {
@@ -228,6 +110,33 @@ class Calculator(mainArea: Area)(implicit val ec: ExecutionContext) {
 
       def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
     }
+  }
+
+  /*class Updater private(val area: Area, val points: Traversable[Point], val maxIter: Int)(implicit ec: ExecutionContext) {
+
+    lazy val update: Future[Updater] = future {
+      // debug BEGIN
+//      print(s"UPDATE $this")
+//      area.foreach( point => pixels(point.index) = 255 << 16)
+//      painter.repaint()
+//      debugQuene.take
+      // debug END
+      val unsettledPoints = updateAll()
+      // debug BEGIN
+//      area foreach color
+//      println(" DONE")
+      // debug END
+      //painter.repaint() // TODO repaint only after a whole update cycle
+      new Updater(area, unsettledPoints, maxIter + iterationStep)
+    }
+
+    /**
+     * Updates one point to maxIter. The default implementation expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
+     * @param point to update
+     */
+    protected def updatePoint(point: Point): Unit = {
+      iterate(point)
+    }
 
     override def toString: String =
       s"Updater for $area, points size: ${points.size}, maxIter: $maxIter, id: ${hashCode}"
@@ -248,7 +157,7 @@ class Calculator(mainArea: Area)(implicit val ec: ExecutionContext) {
       }
     }
   }
-}
+}*/
 
 }
 
