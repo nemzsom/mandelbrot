@@ -16,5 +16,7 @@ class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
     databuffer.getData
   }
 
+  debugPixels = pixels
+
   def plot(p: Point): Unit = pixels(p.index) = colorMap.color(p)
 }

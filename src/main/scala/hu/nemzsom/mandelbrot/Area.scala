@@ -45,7 +45,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
       f(pointAt(x, y))
     }
 
-  def borders: Traversable[Point] = new Traversable[Point] {
+  def border: Traversable[Point] = new Traversable[Point] {
     override def foreach[U](f: (Point) => U): Unit = {
       for (x <- 0 until width) { f(pointAt(x, 0)); f(pointAt(x, height - 1)) }
       for (y <- 1 until height - 1) { f(pointAt(0, y)); f(pointAt(width - 1, y)) }
@@ -57,22 +57,25 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
   }
 
   /**
-   * Splits this area into 2 pieces among the longer side.
-   * @return tuple as (left, right) or (top, bottom)
+   * Splits this area into 2 pieces vertically
+   * @return tuple of (top, bottom)
    */
-  def split: (Area, Area) = {
-    if (width > height) { // split horizontal
-      val half = width / 2
-      val left = subArea(0, 0, half, height)
-      val right = subArea(half, 0, width - half, height)
-      (left, right)
-    }
-    else { // split vertical
-      val half = height / 2
-      val top = subArea(0, 0, width, half)
-      val bottom = subArea(0, half, width, height - half)
-      (top, bottom)
-    }
+  def splitVertical: (Area, Area) = {
+    val half = height / 2
+    val top = subArea(0, 0, width, half)
+    val bottom = subArea(0, half, width, height - half)
+    (top, bottom)
+  }
+
+  /**
+   * Splits this area into 2 pieces horizontally
+   * @return tuple of (left, right)
+   */
+  def splitHorizontal: (Area, Area) = {
+    val half = width / 2
+    val left = subArea(0, 0, half, height)
+    val right = subArea(half, 0, width - half, height)
+    (left, right)
   }
 
   override def size: Int = width * height
