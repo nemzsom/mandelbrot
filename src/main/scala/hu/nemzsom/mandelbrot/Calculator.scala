@@ -14,8 +14,8 @@ case class CalcStat(total: Int, settled: Int, maxIter: Int)
 class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext) {
 
   private object Config {
-    val maxDividableSize = 100
-    val iterationStep = 1
+    val maxDividableSize = 14
+    val iterationStep = 10
   }
 
   import Config._
@@ -43,15 +43,17 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       */
     def updated(total: Int, settled: Int): Unit = {
       // DEBUG
-      println(s"$this update with total: $total, settled: $settled.")
+      //println(s"$this update with total: $total, settled: $settled.")
       // DEBUG END
-      _count_settled.addAndGet(settled)
-      check(_remaining_total.addAndGet(-total))
+      if (total > 0) {
+        _count_settled.addAndGet(settled)
+        check(_remaining_total.addAndGet(-total))
+      }
     }
 
     private def previousFinished(initiallySettled: Int): Unit = {
       // DEBUG
-      println(s"$this prev finished with initiallySettled: $initiallySettled.")
+      //println(s"$this prev finished with initiallySettled: $initiallySettled.")
       // DEBUG END
       if (initiallySettled != 0) {
         _initially_settled = initiallySettled
@@ -61,7 +63,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
     private def check(remaining: Int): Unit = {
       // DEBUG
-      println(s"Ccheck with remaining: $remaining.")
+      //println(s"Check with remaining: $remaining.")
       // DEBUG END
       assert(remaining >= 0, s"remaining: $remaining") // TODO remove after debug
       if (remaining == 0) {
@@ -89,31 +91,34 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
   private def calcWithBorder(area: Area, borderUpdater: Updater): Unit = if (!subscription.isUnsubscribed){
     val border = borderUpdater.points
     val cycle = borderUpdater.cycle
-    borderUpdater.update().onSuccess { case next =>
+    borderUpdater.update().onSuccess { case borderNext =>
       if (isUniform(border)) {
-        handleUniformBorder(area, border, cycle, next)
+        handleUniformBorder(area, cycle, borderNext)
       }
       else if (isDividable(area)) {
         divideAndCalc(area, cycle)
       }
       else {
-        Updater.start(middle(area), cycle).update().onSuccess { case _ =>
-          recurseCalc(Updater.continue(area, cycle.next))
+        Updater.start(inner(area), cycle).update().onSuccess { case innerNext =>
+          recurseCalc(Updater.merge(borderNext, innerNext))
         }
       }
     }
   }
 
-  private def handleUniformBorder(area: Area, border: Traversable[Point], cycle: IterationCycle, next: Updater): Unit = {
-    val loc = border.head.location
+  private def handleUniformBorder(area: Area, cycle: IterationCycle, borderNext: Updater): Unit = {
+    val loc = area.topLeft.location
+    // area size without borders
     val innerAreaSize = (area.width - 2) * (area.height - 2)
-    if (loc == Unsettled) {         // Unsettled border
+    if (loc == Unsettled) {
+      // Unsettled border
       cycle.updated(innerAreaSize, 0)
-      calcWithBorder(area, next.update(), cycle.next)
+      calcWithBorder(area, borderNext)
     }
-    else {                          // Inside or outside (with same iter) border
-      val middleArea = middle(area)
-      middleArea.foreach{ point =>
+    else {
+      // Inside or outside (with same iter) border
+      val innerArea = inner(area)
+      innerArea.foreach{ point =>
         point.location = loc
         plotter.plot(point)
       }
@@ -122,12 +127,12 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
   }
 
   private def divideAndCalc(area: Area, cycle: IterationCycle): Unit = {
-    def calc(a1: Area, a2: Area, dividingLine: Area): Unit = {
-      Updater.start(dividingLine, cycle).update().onSuccess { case _ =>
-        calcWithBorder(a1, Updater.continue(a1.border, cycle.next))
-        calcWithBorder(a2, Updater.continue(a2.border, cycle.next))
+      def calc(a1: Area, a2: Area, dividingLine: Area): Unit = {
+        Updater.start(dividingLine, cycle).update().onSuccess { case _ =>
+          calcWithBorder(a1, Updater.completed(a1.border, cycle))
+          calcWithBorder(a2, Updater.completed(a2.border, cycle))
+        }
       }
-    }
     if (area.width > area.height) {
       val (left, right) = area.splitHorizontal
       val dividingLine = area.subArea(left.width - 1, 1, 2, area.height - 2)
@@ -140,9 +145,9 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
     }
   }
 
-  private def recurseCalc(updater: Updater): Unit = if (!subscription.isUnsubscribed) {
+  private def recurseCalc(updater: Updater): Unit = if (!subscription.isUnsubscribed && updater.hasPoints) {
     updater.update().onSuccess { case nextUpdater =>
-      if (nextUpdater.hasPoints) recurseCalc(nextUpdater)
+      recurseCalc(nextUpdater)
     }
   }
 
@@ -152,19 +157,19 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
   private def isUniform(points: Traversable[Point]): Boolean =
     points.forall(_.location == points.head.location)
 
-  private def middle(area: Area) = area.subArea(1, 1, area.width - 2, area.height - 2)
+  /** Inner area without borders */
+  private def inner(area: Area) = area.subArea(1, 1, area.width - 2, area.height - 2)
 
   class Updater private(val points: Traversable[Point], val cycle: IterationCycle)(implicit ec: ExecutionContext) {
 
-    val maxIter = cycle.maxIter
+    lazy val maxIter = cycle.maxIter
 
-    // TODO cycle.next and Updater.update does similar things. The logic should be in one place.
     def update(): Future[Updater] = future {
       // debug BEGIN
-      print(s"UPDATE at $cycle")
-      points.foreach( point => debugPixels(point.index) = 255 << 16)
-      debugPanel.repaint()
-      debugQuene.take
+//      print(s"UPDATE at $cycle")
+//      points.foreach( point => debugPixels(point.index) = 255 << 16)
+//      debugPanel.repaint()
+//      debugQuene.take
       // debug END
       var total = 0
       var settled = 0
@@ -182,12 +187,12 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
         }
       }
       // debug BEGIN
-      points foreach plotter.plot
-      println(s" DONE. total: $total, settled: $settled")
-      debugPanel.repaint()
+//      points foreach plotter.plot
+//      println(s" DONE. total: $total, settled: $settled")
+//      debugPanel.repaint()
       // debug END
       cycle.updated(total, settled)
-      if (total == settled) Updater.empty
+      if (total == settled) Updater.empty(cycle.next)
       else new Updater(unsettledPoints, cycle.next)
     }
 
@@ -231,6 +236,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
   }
 
+  // TODO define a trait for updater and provide various implementations instead of subclasses
   object Updater {
 
     /**
@@ -238,23 +244,28 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
      * @param points the points to update. This update must be the first for them in the actual calculation
      * @param cycle the actual iteration cycle
      */
-    def start(points: Traversable[Point], cycle: IterationCycle)(implicit ec: ExecutionContext) = newUpdater(points, cycle, starter = true)
+    def start(points: Traversable[Point], cycle: IterationCycle) = newUpdater(points, cycle, starter = true)
 
     /**
      * Creates a new updater, that can continue the update process for the provided points
      * @param points the points to update. They must have updated at least once in the actual calculation
      * @param cycle the actual iteration cycle
      */
-    def continue(points: Traversable[Point], cycle: IterationCycle)(implicit ec: ExecutionContext) = newUpdater(points, cycle, starter = false)
+    def continue(points: Traversable[Point], cycle: IterationCycle) = newUpdater(points, cycle, starter = false)
 
-    // TODO define a trait for updater and provide various implementations
-    def empty = new Updater(null, null) {
-      override def hasPoints = false
+    def merge(updaterA: Updater, updaterB: Updater) = {
+      require(updaterA.cycle == updaterB.cycle, s"updaterA cycle: ${updaterA.cycle}, updaterB cycle: ${updaterB.cycle}")
+      if (updaterA.hasPoints || updaterB.hasPoints) continue(updaterA.points ++ updaterB.points, updaterA.cycle)
+      else empty(updaterA.cycle)
+    }
+
+    def empty(cycle: IterationCycle) = new Updater(Traversable(), cycle) {
+      override val hasPoints = false
     }
 
     def completed(points: Traversable[Point], cycle: IterationCycle) = new Updater(points, cycle) {
-      override def update() = Future.successful(this)
-    }
+      override def update() = Future.successful(continue(points, cycle.next))
+  }
 
     /**
      * Creates a new updater

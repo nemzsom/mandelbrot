@@ -16,11 +16,11 @@ import rx.lang.scala.Subscription
 object MandelbrotApp extends SimpleSwingApplication {
 
   val numOfProcs = Runtime.getRuntime.availableProcessors
-  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(/*numOfProcs * 2*/1).asInstanceOf[ThreadPoolExecutor]
+  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
-  val width = 100
-  val height = 100
+  val width = 1000
+  val height = 1000
   val mainArea = Area(Complex(-2, -2), 4, width, height)
   debugPanel = ui
   setDebugArea(mainArea)
@@ -30,13 +30,16 @@ object MandelbrotApp extends SimpleSwingApplication {
   val plotter = new BImagePlotter(image, new Black_and_WhiteColorMap)
   val calculator = new Calculator(mainArea, plotter)
 
-  val subscription: Subscription = calculator.calculate().subscribe { stat => stat match {
+  debugTime = System.nanoTime
+  val subscription: Subscription = calculator.calculate().subscribe( stat => stat match {
     case CalcStat(total, settled, maxIter) =>
-      println(s"NEXT at maxIter $maxIter total: $total, settled: $settled")
-      if (maxIter > 300)
+      println(s"NEXT at maxIter $maxIter total: $total, settled: $settled (after ${(System.nanoTime - debugTime) / 1000000} ms)")
+      if (maxIter > 300) {
         subscription.unsubscribe()
+        println(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
+      }
       ui.repaint()
-  }}
+  })
 
   lazy val ui = new Panel {
 
