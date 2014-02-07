@@ -12,12 +12,16 @@ import java.awt.image.BufferedImage
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import scala.concurrent.ExecutionContext
 import rx.lang.scala.Subscription
+import com.typesafe.scalalogging.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object MandelbrotApp extends SimpleSwingApplication {
 
   val numOfProcs = Runtime.getRuntime.availableProcessors
   val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
+
+  protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.App")
 
   val width = 1000
   val height = 1000
@@ -33,10 +37,10 @@ object MandelbrotApp extends SimpleSwingApplication {
   debugTime = System.nanoTime
   val subscription: Subscription = calculator.calculate().subscribe( stat => stat match {
     case CalcStat(total, settled, maxIter) =>
-      println(s"NEXT at maxIter $maxIter total: $total, settled: $settled (after ${(System.nanoTime - debugTime) / 1000000} ms)")
+      logger.debug(s"NEXT at maxIter $maxIter total: $total, settled: $settled (after ${(System.nanoTime - debugTime) / 1000000} ms)")
       if (maxIter > 300) {
         subscription.unsubscribe()
-        println(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
+        logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
       }
       ui.repaint()
   })

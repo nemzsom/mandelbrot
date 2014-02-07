@@ -5,6 +5,8 @@ import scala.concurrent._
 import scala.math._
 import rx.lang.scala.{Subscription, Observer, Observable}
 import java.util.concurrent.atomic.AtomicInteger
+import com.typesafe.scalalogging.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 case class CalcStat(total: Int, settled: Int, maxIter: Int)
 
@@ -19,6 +21,8 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
   }
 
   import Config._
+
+  protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.Calculator")
 
   /**
    * Aggregates the various update processes result statistics in one iteration cycle.
@@ -43,7 +47,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       */
     def updated(total: Int, settled: Int): Unit = {
       // DEBUG
-      //println(s"$this update with total: $total, settled: $settled.")
+      logger.trace(s"$this update with total: $total, settled: $settled.")
       // DEBUG END
       if (total > 0) {
         _count_settled.addAndGet(settled)
@@ -53,7 +57,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
     private def previousFinished(initiallySettled: Int): Unit = {
       // DEBUG
-      //println(s"$this prev finished with initiallySettled: $initiallySettled.")
+      //logger.trace(s"$this prev finished with initiallySettled: $initiallySettled.")
       // DEBUG END
       if (initiallySettled != 0) {
         _initially_settled = initiallySettled
@@ -63,7 +67,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
     private def check(remaining: Int): Unit = {
       // DEBUG
-      //println(s"Check with remaining: $remaining.")
+      //logger.trace(s"Check with remaining: $remaining.")
       // DEBUG END
       assert(remaining >= 0, s"remaining: $remaining") // TODO remove after debug
       if (remaining == 0) {
@@ -188,7 +192,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       }
       // debug BEGIN
 //      points foreach plotter.plot
-//      println(s" DONE. total: $total, settled: $settled")
+//      logger.trace(s" DONE. total: $total, settled: $settled")
 //      debugPanel.repaint()
       // debug END
       cycle.updated(total, settled)
