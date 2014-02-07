@@ -35,15 +35,21 @@ object MandelbrotApp extends SimpleSwingApplication {
   val calculator = new Calculator(mainArea, plotter)
 
   debugTime = System.nanoTime
-  val subscription: Subscription = calculator.calculate().subscribe( stat => stat match {
-    case CalcStat(total, settled, maxIter) =>
-      logger.debug(s"NEXT at maxIter $maxIter total: $total, settled: $settled (after ${(System.nanoTime - debugTime) / 1000000} ms)")
-      if (maxIter > 300) {
-        subscription.unsubscribe()
-        logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
-      }
+  val subscription: Subscription = calculator.calculate().subscribe(
+    stat => stat match {
+      case CalcStat(total, settled, maxIter) =>
+        logger.debug(s"NEXT at maxIter $maxIter total: $total, settled: $settled (after ${(System.nanoTime - debugTime) / 1000000} ms)")
+        if (maxIter > 300) {
+          subscription.unsubscribe()
+        }
+        ui.repaint()
+    },
+    error => logger.error(s"Error happened $error"),
+    () => {
+      logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
       ui.repaint()
-  })
+    }
+  )
 
   lazy val ui = new Panel {
 

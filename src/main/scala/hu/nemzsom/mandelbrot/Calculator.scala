@@ -51,7 +51,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       // DEBUG END
       if (total > 0) {
         _count_settled.addAndGet(settled)
-        check(_remaining_total.addAndGet(-total))
+        endCheck(_remaining_total.addAndGet(-total))
       }
     }
 
@@ -61,11 +61,11 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       // DEBUG END
       if (initiallySettled != 0) {
         _initially_settled = initiallySettled
-        check(_remaining_total.addAndGet(-initiallySettled))
+        endCheck(_remaining_total.addAndGet(-initiallySettled))
       }
     }
 
-    private def check(remaining: Int): Unit = {
+    private def endCheck(remaining: Int): Unit = {
       // DEBUG
       //logger.trace(s"Check with remaining: $remaining.")
       // DEBUG END
@@ -77,36 +77,50 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       }
     }
 
+    def updateProcessStopped(): Unit = {
+      assert(updateProcessCount.get() > 0) // TODO remove after debug
+      if (updateProcessCount.decrementAndGet() == 0) {
+        observer.onCompleted()
+      }
+    }
+
     override def toString = s"cycle($maxIter)[remaining: ${_remaining_total}, settled: ${_count_settled}, initially settled: ${_initially_settled}]"
   }
 
   private val subscription: Subscription = new Subscription {}
 
+  private val updateProcessCount = new AtomicInteger()
+
   def calculate(): Observable[CalcStat] = Observable.create(
     (observer: Observer[CalcStat]) => {
-      // TODO call onCompleted on the observer WHEN ALL UPDATE FINISHED (either after unsubscribe or all points settled)
       // TODO divide initially to the number of processors
       // TODO if both size bigger than 4 on the complex plane, divide further (to defense against a uniform border entirely outside of the mandelbrot set)
+      updateProcessCount.incrementAndGet()
       calcWithBorder(mainArea, Updater.start(mainArea.border, new IterationCycle(iterationStep, observer)))
       subscription
     }
   )
 
-  private def calcWithBorder(area: Area, borderUpdater: Updater): Unit = if (!subscription.isUnsubscribed){
-    val border = borderUpdater.points
+  private def calcWithBorder(area: Area, borderUpdater: Updater): Unit = {
     val cycle = borderUpdater.cycle
-    borderUpdater.update().onSuccess { case borderNext =>
-      if (isUniform(border)) {
-        handleUniformBorder(area, cycle, borderNext)
-      }
-      else if (isDividable(area)) {
-        divideAndCalc(area, cycle)
-      }
-      else {
-        Updater.start(inner(area), cycle).update().onSuccess { case innerNext =>
-          recurseCalc(Updater.merge(borderNext, innerNext))
+    if (!subscription.isUnsubscribed) {
+      val border = borderUpdater.points
+      borderUpdater.update().onSuccess { case borderNext =>
+        if (isUniform(border)) {
+          handleUniformBorder(area, cycle, borderNext)
+        }
+        else if (isDividable(area)) {
+          divideAndCalc(area, cycle)
+        }
+        else {
+          Updater.start(inner(area), cycle).update().onSuccess { case innerNext =>
+            recurseCalc(Updater.merge(borderNext, innerNext))
+          }
         }
       }
+    }
+    else {
+      cycle.updateProcessStopped()
     }
   }
 
@@ -127,12 +141,14 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
         plotter.plot(point)
       }
       cycle.updated(innerAreaSize, innerAreaSize)
+      cycle.updateProcessStopped()
     }
   }
 
   private def divideAndCalc(area: Area, cycle: IterationCycle): Unit = {
       def calc(a1: Area, a2: Area, dividingLine: Area): Unit = {
         Updater.start(dividingLine, cycle).update().onSuccess { case _ =>
+          updateProcessCount.incrementAndGet()
           calcWithBorder(a1, Updater.completed(a1.border, cycle))
           calcWithBorder(a2, Updater.completed(a2.border, cycle))
         }
@@ -149,11 +165,15 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
     }
   }
 
-  private def recurseCalc(updater: Updater): Unit = if (!subscription.isUnsubscribed && updater.hasPoints) {
-    updater.update().onSuccess { case nextUpdater =>
-      recurseCalc(nextUpdater)
+  private def recurseCalc(updater: Updater): Unit =
+    if (!subscription.isUnsubscribed && updater.hasPoints) {
+      updater.update().onSuccess { case nextUpdater =>
+        recurseCalc(nextUpdater)
+      }
     }
-  }
+    else {
+      updater.cycle.updateProcessStopped()
+    }
 
   private def isDividable(area : Area): Boolean =
     area.width >= maxDividableSize || area.height >= maxDividableSize

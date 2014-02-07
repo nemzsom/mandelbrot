@@ -8,7 +8,9 @@
         </encoder>
     </appender>
 
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
+
+    <logger name="mandelbrot.App" level="INFO"/>
 </configuration>
