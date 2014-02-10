@@ -12,5 +12,5 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="mandelbrot.App" level="INFO"/>
+    <logger name="mandelbrot.App" level="debug"/>
 </configuration>
