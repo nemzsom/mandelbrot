@@ -34,7 +34,7 @@ object Point {
 
 class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) extends Traversable[Point] {
 
-  def topLeft: Point = data(startAt)
+  lazy val topLeft: Point = data(startAt)
 
   def indexFor(x: Int, y: Int): Int = startAt + x + y * lineStride
 
@@ -76,6 +76,22 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     val left = subArea(0, 0, half, height)
     val right = subArea(half, 0, width - half, height)
     (left, right)
+  }
+
+  def resize(newWidth: Int, newHeight: Int): Area = {
+    val newSize = newWidth * newWidth
+    val newData = new Array[Point](newSize)
+    var i = 0
+    for {
+      y <- 0 until newHeight
+      x <- 0 until newWidth
+    } {
+      newData(i) =
+        if (x < width && height < y) pointAt(x, y) // FIXME wrong index: Either create new Point here, or delete index from Point
+        else Point(topLeft.x + x, topLeft.y + y, scale, i)
+      i += 1
+    }
+    new Area(scale, data, width, 0, width, height)
   }
 
   override def size: Int = width * height
