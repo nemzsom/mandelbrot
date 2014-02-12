@@ -171,9 +171,35 @@ class AreaTest extends FunSuite {
 
   test("borders") {
     new TestArea {
-      val borderIndexes = area.border.map(_.index)
+      var borderIndexes = area.border map (_.index)
       assert(borderIndexes.size === borderIndexes.toSet.size) // no duplicates
       assert(borderIndexes.toSet === Set(0, 1, 2, 3, 5, 6, 7, 8))
+    }
+  }
+
+  test("resize") {
+    new TestArea {
+      testResize(area, 2, 2) // shrink
+      testResize(area, 4, 4) // stretch
+      testResize(area, 2, 4) // reshape
+      testResize(area, 4, 2) // reshape
+    }
+
+    def testResize(area: Area, newWidth: Int, newHeight: Int): Unit = {
+      require(area.topLeft.x == 0 && area.topLeft.y == 0)
+      val resized = area.resize(newWidth, newHeight)
+      assert(resized.width === newWidth)
+      assert(resized.height === newHeight)
+      var i = 0
+      for {
+        y <- 0 until newHeight
+        x <- 0 until newWidth
+      } {
+        val p = resized.pointAt(x, y)
+        assertCoords(p, (x, y))
+        assert(p.index === i)
+        i += 1
+      }
     }
   }
 }

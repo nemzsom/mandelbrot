@@ -16,7 +16,7 @@ class Controller(panel: ImagePanel) {
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.Controller")
 
   val plotter = new BImagePlotter(panel.image, new Black_and_WhiteColorMap)
-  val area = Area(Complex(-2, -2), 4, panel.image.getWidth, panel.image.getWidth)
+  val area = Area(Complex(-2, -2), 4, panel.image.getWidth, panel.image.getHeight)
   val calculator = new Calculator(area, plotter)
 
   debugTime = System.nanoTime

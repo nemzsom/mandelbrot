@@ -9,7 +9,7 @@ case object Unsettled extends PointLoc
 /** Point is outside the mandelbrot set, escaped at the specified iteration */
 case class Outside(iter: Int) extends PointLoc
 
-class Point (val x: Int, val y: Int, val complexValue: Complex, val index: Int) {
+class Point (val x: Int, val y: Int, val complexValue: Complex, var index: Int) {
 
   var iter = 0
   var iterValue = Complex.ZERO
@@ -57,10 +57,10 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
   }
 
   /**
-   * Splits this area into 2 pieces vertically
+   * Splits this area into 2 pieces horizontally
    * @return tuple of (top, bottom)
    */
-  def splitVertical: (Area, Area) = {
+  def splitHorizontal: (Area, Area) = {
     val half = height / 2
     val top = subArea(0, 0, width, half)
     val bottom = subArea(0, half, width, height - half)
@@ -68,10 +68,10 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
   }
 
   /**
-   * Splits this area into 2 pieces horizontally
+   * Splits this area into 2 pieces vertically
    * @return tuple of (left, right)
    */
-  def splitHorizontal: (Area, Area) = {
+  def splitVertical: (Area, Area) = {
     val half = width / 2
     val left = subArea(0, 0, half, height)
     val right = subArea(half, 0, width - half, height)
@@ -79,7 +79,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
   }
 
   def resize(newWidth: Int, newHeight: Int): Area = {
-    val newSize = newWidth * newWidth
+    val newSize = newWidth * newHeight
     val newData = new Array[Point](newSize)
     var i = 0
     for {
@@ -87,11 +87,15 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
       x <- 0 until newWidth
     } {
       newData(i) =
-        if (x < width && height < y) pointAt(x, y) // FIXME wrong index: Either create new Point here, or delete index from Point
+        if (x < width && y < height) {
+          val p = pointAt(x, y)
+          p.index = i // sets the new index
+          p
+        }
         else Point(topLeft.x + x, topLeft.y + y, scale, i)
       i += 1
     }
-    new Area(scale, data, width, 0, width, height)
+    new Area(scale, newData, newWidth, 0, newWidth, newHeight)
   }
 
   override def size: Int = width * height
@@ -101,20 +105,13 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
 object Area {
 
-  def apply(topLeft: (Int, Int), scale: Double, width: Int, height: Int): Area = {
-    val (topLeftX, topLeftY) = topLeft
-    val size = width * height
-    val data = new Array[Point](size)
-    var i = 0
-    for {
-      y <- topLeftY until topLeftY + height
-      x <- topLeftX until topLeftX + width
-    } {
-      data(i) = Point(x, y, scale, i)
-      i += 1
-    }
-    new Area(scale, data, width, 0, width, height)
+  def onePoint(topLeft: (Int, Int), scale: Double): Area = {
+    val (x, y) = topLeft
+    new Area(scale, Array(Point(x, y, scale, 0)), 1, 0, 1, 1)
   }
+
+  def apply(topLeft: (Int, Int), scale: Double, width: Int, height: Int): Area =
+    onePoint(topLeft, scale).resize(width, height)
 
   def apply(topLeftComp: Complex, reInterval: Double, width: Int, height: Int): Area = {
     val scale: Double = reInterval / (height - 1)

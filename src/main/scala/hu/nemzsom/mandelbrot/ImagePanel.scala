@@ -53,14 +53,6 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
     }
   )
 
-  /*reactions += {
-    case e: MousePressed => /*println(s"clicked: ${e.point}");*/ debugQuene.put(0)
-    case e: MouseDragged =>
-    case e: MouseWheelMoved => (1 to 10).foreach(debugQuene.put(_))
-    case _: UIElementResized =>
-    case _: FocusLost => repaint()
-  }*/
-
   override def paintComponent(g: Graphics2D) = {
     super.paintComponent(g)
     g.drawImage(image, 0, 0, image.getWidth, image.getHeight, null)

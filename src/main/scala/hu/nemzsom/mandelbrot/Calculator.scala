@@ -7,6 +7,7 @@ import rx.lang.scala.{Subscription, Observer, Observable}
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.scalalogging.slf4j.Logger
 import org.slf4j.LoggerFactory
+import scala.util.{Failure, Success}
 
 case class CalcStat(total: Int, settled: Int, maxIter: Int)
 
@@ -47,7 +48,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       */
     def updated(total: Int, settled: Int): Unit = {
       // DEBUG
-      //logger.trace(s"$this update with total: $total, settled: $settled.")
+      logger.trace(s"$this update with total: $total, settled: $settled.")
       // DEBUG END
       if (total > 0) {
         _count_settled.addAndGet(settled)
@@ -57,17 +58,18 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
     private def previousFinished(initiallySettled: Int): Unit = {
       // DEBUG
-      //logger.trace(s"$this prev finished with initiallySettled: $initiallySettled.")
+      logger.trace(s"$this prev finished with initiallySettled: $initiallySettled.")
       // DEBUG END
       if (initiallySettled != 0) {
         _initially_settled = initiallySettled
-        endCheck(_remaining_total.addAndGet(-initiallySettled))
+        if (initiallySettled < mainArea.size) // to prevent infinite recursion
+          endCheck(_remaining_total.addAndGet(-initiallySettled))
       }
     }
 
     private def endCheck(remaining: Int): Unit = {
       // DEBUG
-      //logger.trace(s"Check with remaining: $remaining.")
+      logger.trace(s"Check with remaining: $remaining.")
       // DEBUG END
       assert(remaining >= 0, s"remaining: $remaining") // TODO remove after debug
       if (remaining == 0) {
@@ -105,18 +107,22 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
     val cycle = borderUpdater.cycle
     if (!subscription.isUnsubscribed) {
       val border = borderUpdater.points
-      borderUpdater.update().onSuccess { case borderNext =>
-        if (isUniform(border)) {
-          handleUniformBorder(area, cycle, borderNext)
-        }
-        else if (isDividable(area)) {
-          divideAndCalc(area, cycle)
-        }
-        else {
-          Updater.start(inner(area), cycle).update().onSuccess { case innerNext =>
-            recurseCalc(Updater.merge(borderNext, innerNext))
+      borderUpdater.update().onComplete {
+        case Success(borderNext) =>
+          if (isUniform(border)) {
+            handleUniformBorder(area, cycle, borderNext)
           }
-        }
+          else if (isDividable(area)) {
+            divideAndCalc(area, cycle)
+          }
+          else {
+            Updater.start(inner(area), cycle).update().onComplete {
+              case Success(innerNext) =>
+                recurseCalc(Updater.merge(borderNext, innerNext))
+              case Failure(t) => logger.error("Inner update failed", t)
+            }
+          }
+        case Failure(t) => logger.error("Border update failed", t)
       }
     }
     else {
@@ -147,19 +153,21 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
   private def divideAndCalc(area: Area, cycle: IterationCycle): Unit = {
       def calc(a1: Area, a2: Area, dividingLine: Area): Unit = {
-        Updater.start(dividingLine, cycle).update().onSuccess { case _ =>
-          updateProcessCount.incrementAndGet()
-          calcWithBorder(a1, Updater.completed(a1.border, cycle))
-          calcWithBorder(a2, Updater.completed(a2.border, cycle))
+        Updater.start(dividingLine, cycle).update().onComplete {
+          case Success(_) =>
+            updateProcessCount.incrementAndGet()
+            calcWithBorder(a1, Updater.completed(a1.border, cycle))
+            calcWithBorder(a2, Updater.completed(a2.border, cycle))
+          case Failure(t) => logger.error("Divide line update failed", t)
         }
       }
     if (area.width > area.height) {
-      val (left, right) = area.splitHorizontal
+      val (left, right) = area.splitVertical
       val dividingLine = area.subArea(left.width - 1, 1, 2, area.height - 2)
       calc(left, right, dividingLine)
     }
     else {
-      val (top, bottom) = area.splitVertical
+      val (top, bottom) = area.splitHorizontal
       val dividingLine = area.subArea(1, top.height - 1, area.width - 2, 2)
       calc(top, bottom, dividingLine)
     }
@@ -167,8 +175,10 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
   private def recurseCalc(updater: Updater): Unit =
     if (!subscription.isUnsubscribed && updater.hasPoints) {
-      updater.update().onSuccess { case nextUpdater =>
-        recurseCalc(nextUpdater)
+      updater.update().onComplete {
+        case Success(nextUpdater) =>
+          recurseCalc(nextUpdater)
+        case Failure(t) => logger.error("Recurse update failed", t)
       }
     }
     else {
@@ -227,10 +237,10 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
       def update(): Future[Updater] = future {
         // debug BEGIN
-        //      print(s"UPDATE at $cycle")
-        //      points.foreach( point => debugPixels(point.index) = 255 << 16)
-        //      debugPanel.repaint()
-        //      debugQuene.take
+//              logger.trace(s"UPDATE at $cycle")
+//              points.foreach ( point => debugPixels(point.index) = 255 << 16 )
+//              debugPanel.repaint()
+//              debugQuene.take
         // debug END
         var total = 0
         var settled = 0
@@ -248,9 +258,9 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
           }
         }
         // debug BEGIN
-        //      points foreach plotter.plot
-        //      logger.trace(s" DONE. total: $total, settled: $settled")
-        //      debugPanel.repaint()
+//              points foreach plotter.plot
+//              logger.trace(s"DONE at $cycle. total: $total, settled: $settled")
+//              debugPanel.repaint()
         // debug END
         cycle.updated(total, settled)
         if (total == settled) empty(cycle.next)
