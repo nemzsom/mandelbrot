@@ -9,8 +9,8 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.App")
 
-  val width = 300 // max1924
-  val height = 1200 // max1062
+  val width = 300
+  val height = 300
 
   val panel = new ImagePanel(width, height)
 

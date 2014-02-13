@@ -48,7 +48,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
       */
     def updated(total: Int, settled: Int): Unit = {
       // DEBUG
-      logger.trace(s"$this update with total: $total, settled: $settled.")
+      //logger.trace(s"$this update with total: $total, settled: $settled.")
       // DEBUG END
       if (total > 0) {
         _count_settled.addAndGet(settled)
@@ -58,7 +58,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
     private def previousFinished(initiallySettled: Int): Unit = {
       // DEBUG
-      logger.trace(s"$this prev finished with initiallySettled: $initiallySettled.")
+      //logger.trace(s"$this prev finished with initiallySettled: $initiallySettled.")
       // DEBUG END
       if (initiallySettled != 0) {
         _initially_settled = initiallySettled
@@ -69,7 +69,7 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
     private def endCheck(remaining: Int): Unit = {
       // DEBUG
-      logger.trace(s"Check with remaining: $remaining.")
+      //logger.trace(s"Check with remaining: $remaining.")
       // DEBUG END
       assert(remaining >= 0, s"remaining: $remaining") // TODO remove after debug
       if (remaining == 0) {
@@ -105,6 +105,9 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
   private def calcWithBorder(area: Area, borderUpdater: Updater): Unit = {
     val cycle = borderUpdater.cycle
+    // DEBUG
+    // logger.trace(s"Calc with border for $area at $cycle")
+    // DEBUG END
     if (!subscription.isUnsubscribed) {
       val border = borderUpdater.points
       borderUpdater.update().onComplete {

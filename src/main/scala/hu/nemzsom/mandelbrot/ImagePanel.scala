@@ -24,7 +24,7 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
       case e: MouseWheelMoved => observer.onNext(e)
     }
   )
-  
+
   val resized : Observable[Dimension] = reactionToObservable (
     (observer: Observer[Dimension]) => {
       case _: UIElementResized => observer.onNext(size)
