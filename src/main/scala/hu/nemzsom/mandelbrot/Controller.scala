@@ -27,27 +27,56 @@ class Controller(panel: ImagePanel) {
   var calculation = startNewCalculation(Area(Complex(-2, -2), 4, panel.image.getWidth, panel.image.getHeight))
 
   panel.resized.subscribe { dimension =>
-    if (calculation.area.width != dimension.width || calculation.area.height != dimension.height) {
-      logger.debug(s"panel resized to $dimension")
-      //subscription.unsubscribe()
-      // resize area: area = area.resize(dimension.width, dimension.height)
-      // register callback to calc done: start new calculation with new area, new bufferedImage
+    logger.debug(s"panel resized to $dimension")
+    val resizes = requests.filter(_.isInstanceOf[Resize]).asInstanceOf[Queue[Resize]]
+    val (currWidth, currHeight) =
+      if (resizes.isEmpty) (calculation.area.width, calculation.area.height)
+      else (resizes.last.width, resizes.last.height)
+    if (currWidth != dimension.width || currHeight != dimension.height) {
+      onRequest(Resize(dimension.width, dimension.height))
     }
+  }
+
+  panel.mouseDragged.subscribe( xy => xy match {
+    case (x, y) => onRequest(Drag(x, y))
+  })
+
+  panel.mouseWheelMoved.subscribe { e =>
+    val point = e.point
+    onRequest(Zoom(e.rotation, (point.x, point.y)))
   }
 
   def startNewCalculation(area: Area): Calculation =
     new Calculation(area,  new BImagePlotter(panel.image, new Black_and_WhiteColorMap))
 
-  /*panel.resized.subscribe( dim => logger.debug(s"resize $dim"))
-  panel.mouseDragged.subscribe( xy => xy match {
-    case (x, y) => logger.debug(s"dragged x: $x, y: $y")
-  })
-  panel.mouseWheelMoved.subscribe( e => logger.debug(s"wheelMoved $e"))*/
+  def onRequest(req: UIRequest): Unit = {
+    requests = requests.enqueue(req)
+    if (calculation.running) calculation.stop()
+    else processRequests()
+  }
 
-  def runqueue: Unit = {
-    // TODO implement
-    // process requests on the queue
-    // start new calculation
+  def processRequests(): Unit = {
+    var area = calculation.area
+    logger.debug(s"processRequests $requests")
+    requests.foreach{
+      case Resize(width, height) =>
+        logger.debug(s"process resize for ($width, $height)")
+        area = area.resize(width, height)
+        panel.resizeImage(width, height)
+      case Drag(diffX, diffY) =>
+        logger.debug(s"process drag for ($diffX, $diffY)")
+        area = area.move(diffX, diffY)
+        panel.moveImage(diffX, diffY)
+      case Zoom(rotation, at) =>
+        logger.debug(s"process zoom for rotation $rotation at $at")
+        val factor = 1 - rotation * 0.25
+        area = area.zoom(factor, at)
+        panel.zoomImage(factor, at)
+        // TODO eliminate remaining pixels after image scale
+    }
+    requests = Queue.empty
+    panel.repaint()
+    calculation = startNewCalculation(area)
   }
 
   /**
@@ -73,10 +102,11 @@ class Controller(panel: ImagePanel) {
       () => Swing.onEDT {
         logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
         running = false
-        if (!requests.isEmpty) runqueue
-        panel.repaint()
+        if (!requests.isEmpty) processRequests()
       }
     )
+
+    def stop(): Unit = subscription.unsubscribe()
   }
 
 }

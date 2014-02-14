@@ -86,16 +86,51 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
       y <- 0 until newHeight
       x <- 0 until newWidth
     } {
-      newData(i) =
+      newData(i) = {
         if (x < width && y < height) {
           val p = pointAt(x, y)
           p.index = i // sets the new index
           p
         }
         else Point(topLeft.x + x, topLeft.y + y, scale, i)
+      }
       i += 1
     }
     new Area(scale, newData, newWidth, 0, newWidth, newHeight)
+  }
+
+  def move(diffX: Int, diffY: Int): Area = {
+    val newData = new Array[Point](size)
+    val topLeftX = topLeft.x - diffX
+    val topLeftY = topLeft.y - diffY
+    var i = 0
+    for {
+      y <- 0 until height
+      oldY = y - diffY
+      x <- 0 until width
+      oldX = x - diffX
+    } {
+      newData(i) = {
+        if (oldX >= 0 && oldX < width && oldY >= 0 && oldY < height) {
+          val p = pointAt(oldX, oldY)
+          p.index = i // sets the new index
+          p
+        }
+        else Point(topLeftX + x, topLeftY + y, scale, i)
+      }
+      i += 1
+    }
+    new Area(scale, newData, width, 0, width, height)
+  }
+
+  def zoom(factor: Double, at: (Int, Int)): Area = {
+    val (atX, atY) = at
+    val point = pointAt(atX, atY)
+    val newScale = scale / factor
+    val newX = (point.x * factor).toInt
+    val newY = (point.y * factor).toInt
+    val topLeft = (newX - atX, newY - atY)
+    Area(topLeft, newScale, width, height)
   }
 
   override def size: Int = width * height
