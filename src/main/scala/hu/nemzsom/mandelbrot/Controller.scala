@@ -69,7 +69,7 @@ class Controller(panel: ImagePanel) {
         panel.moveImage(diffX, diffY)
       case Zoom(rotation, at) =>
         logger.debug(s"process zoom for rotation $rotation at $at")
-        val factor = 1 - rotation * 0.25
+        val factor = Math.pow(1.25, -rotation)
         area = area.zoom(factor, at)
         panel.zoomImage(factor, at)
         // TODO eliminate remaining pixels after image scale

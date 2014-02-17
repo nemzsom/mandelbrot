@@ -6,7 +6,7 @@ import scala.swing.event.UIElementResized
 import scala.swing.event.MousePressed
 import scala.swing.event.MouseWheelMoved
 import scala.swing.event.MouseDragged
-import java.awt.{RenderingHints, Graphics, Dimension, Graphics2D}
+import java.awt.{Dimension, Graphics2D}
 import java.awt.image.BufferedImage
 import rx.lang.scala.{Subscription, Observer, Observable}
 import scala.swing.Reactions.Reaction
@@ -23,7 +23,7 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
 
   preferredSize = (initialWidth, initialHeight)
   focusable = true
-  listenTo(this, mouse.moves, mouse.clicks, mouse.wheel)
+  listenTo(this, mouse.moves, mouse.clicks, mouse.wheel, keys)
 
   val mouseWheelMoved: Observable[MouseWheelMoved] = reactionToObservable (
     (observer: Observer[MouseWheelMoved]) => {

@@ -3,7 +3,9 @@ package hu.nemzsom.mandelbrot
 import scala.swing.{MainFrame, SimpleSwingApplication}
 import com.typesafe.scalalogging.slf4j.Logger
 import org.slf4j.LoggerFactory
-import scala.swing.event.{MouseWheelMoved, MouseDragged, MousePressed}
+import scala.swing.event._
+import scala.swing.event.KeyPressed
+import scala.swing.event.MousePressed
 
 object MandelbrotApp extends SimpleSwingApplication {
 
@@ -22,9 +24,8 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   // DEBUG
   panel.reactions += {
-    case e: MousePressed => /*println(s"clicked: ${e.point}");*/ debugQuene.put(0)
-    case e: MouseDragged =>
-    case e: MouseWheelMoved => (1 to 10).foreach(debugQuene.put(_))
+    case e: MousePressed => println(s"clicked: ${e.point}")
+    case KeyPressed(_, Key.Space, _, _) => debugQuene.put(0)
   }
   // DEBUG END
 

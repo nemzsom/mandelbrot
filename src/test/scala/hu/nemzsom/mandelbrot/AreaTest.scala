@@ -4,6 +4,7 @@ import org.scalatest.FunSuite
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import org.junit.Assert
 
 @RunWith(classOf[JUnitRunner])
 class AreaTest extends FunSuite {
@@ -78,6 +79,12 @@ class AreaTest extends FunSuite {
         assert(point.y === y, "y should match")
       }
     }
+  }
+
+  test("width and height at complex pane") {
+    val area = Area(Complex(-2, -2), 4, 50, 100)
+    Assert.assertEquals(2.0, area.widthAtComplexPane, 0.05)
+    Assert.assertEquals(4.0, area.heightAtComplexPane, 0.05)
   }
 
   test("foreach") {

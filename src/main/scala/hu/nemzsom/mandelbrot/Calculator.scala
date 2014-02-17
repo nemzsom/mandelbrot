@@ -95,13 +95,27 @@ class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext
 
   def calculate(): Observable[CalcStat] = Observable.create(
     (observer: Observer[CalcStat]) => {
-      // TODO divide initially to the number of processors
-      // TODO if both size bigger than 4 on the complex plane, divide further (to defense against a uniform border entirely outside of the mandelbrot set)
-      updateProcessCount.incrementAndGet()
-      calcWithBorder(mainArea, Updater.start(mainArea.border, new IterationCycle(iterationStep, observer)))
+      val firstCycle = new IterationCycle(iterationStep, observer)
+      divideInitially foreach { area =>
+        updateProcessCount.incrementAndGet()
+        calcWithBorder(area, Updater.start(area.border, firstCycle))
+      }
       subscription
     }
   )
+
+  def divideInitially: List[Area] = {
+    def split(area: Area, need: Int): List[Area] =
+      if ((need <= 0 && (area.widthAtComplexPane < 4 || area.heightAtComplexPane < 4)) ||
+          area.width < 4 || area.height < 4) List(area)
+      else {
+        val (a1, a2) =
+          if (area.width > area.height) area.splitVertical
+          else area.splitHorizontal
+        split(a1, need / 2) ++ split(a2, need / 2)
+      }
+    split(mainArea, Runtime.getRuntime.availableProcessors)
+  }
 
   private def calcWithBorder(area: Area, borderUpdater: Updater): Unit = {
     val cycle = borderUpdater.cycle
