@@ -8,9 +8,8 @@ trait ColorMap {
 class Black_and_WhiteColorMap extends ColorMap {
 
   def color(point: Point): Int = point.location match {
-    case Inside => 0
     case Outside(iter) => if (iter % 2 == 0) 0 else 0xFFFFFFFF
-    case Unsettled => 255
+    case _ => 0 // Inside or Unsettled
   }
 }
 

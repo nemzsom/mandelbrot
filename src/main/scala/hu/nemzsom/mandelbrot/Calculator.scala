@@ -16,7 +16,7 @@ case class CalcStat(total: Int, settled: Int, maxIter: Int)
  */
 class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext) {
 
-  private object Config {
+  object Config {
     val maxDividableSize = 14
     val iterationStep = 10
   }

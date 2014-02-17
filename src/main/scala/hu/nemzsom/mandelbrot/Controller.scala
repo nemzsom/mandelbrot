@@ -5,10 +5,9 @@ import com.typesafe.scalalogging.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import scala.concurrent.ExecutionContext
-import rx.subjects.BehaviorSubject
-import java.awt.EventQueue
 import scala.swing.Swing
 import scala.collection.immutable.Queue
+import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
 
 sealed trait UIRequest
 case class Resize(width: Int, height: Int) extends UIRequest
@@ -24,6 +23,7 @@ class Controller(panel: ImagePanel) {
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.Controller")
 
   var requests = Queue.empty[UIRequest]
+  var cleanNeeded = new AtomicBoolean(false)
   var calculation = startNewCalculation(Area(Complex(-2, -2), 4, panel.image.getWidth, panel.image.getHeight))
 
   panel.resized.subscribe { dimension =>
@@ -72,7 +72,7 @@ class Controller(panel: ImagePanel) {
         val factor = Math.pow(1.25, -rotation)
         area = area.zoom(factor, at)
         panel.zoomImage(factor, at)
-        // TODO eliminate remaining pixels after image scale
+        cleanNeeded.set(true)
     }
     requests = Queue.empty
     panel.repaint()
@@ -87,14 +87,22 @@ class Controller(panel: ImagePanel) {
     var running = true
     val calculator = new Calculator(area, plotter)
 
+    val startToSettle = new AtomicBoolean(false)
+
     debugTime = System.nanoTime
 
     val subscription: Subscription = calculator.calculate().subscribe(
       stat => stat match {
         case CalcStat(total, settled, maxIter) =>
           logger.debug(s"NEXT at maxIter $maxIter total: $total, settled: $settled (after ${(System.nanoTime - debugTime) / 1000000} ms)")
-          if (maxIter >= 300) { // TODO dynamically calculate the maximum iteration
-            subscription.unsubscribe()
+          if (startToSettle.get) {
+            if (settled < 10 && cleanNeeded.getAndSet(false))
+              area.filter(_.location == Unsettled) foreach plotter.plot // clean
+            if (settled == 0)
+              subscription.unsubscribe()
+          }
+          else if (maxIter > calculator.Config.iterationStep && settled > 0) {
+            startToSettle.set(true)
           }
           panel.repaint()
       },
@@ -103,6 +111,11 @@ class Controller(panel: ImagePanel) {
         logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
         running = false
         if (!requests.isEmpty) processRequests()
+        else {
+          // cleaning
+
+          panel.repaint()
+        }
       }
     )
 
