@@ -4,7 +4,7 @@ import scala.swing.Swing._
 import scala.swing.{Component, MainFrame, Panel, SimpleSwingApplication}
 import java.awt.{Color, Graphics2D}
 import java.awt.image.{DataBufferInt, BufferedImage}
-import hu.nemzsom.mandelbrot.{Area, Point}
+import hu.nemzsom.mandelbrot.Area
 import scala.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ThreadPoolExecutor, Executors}
@@ -85,7 +85,7 @@ object AreaSB extends SimpleSwingApplication {
         time = System.nanoTime
       }
       val counter = new AtomicInteger(workAreas.size - 1)
-      def runOnstart = {
+      def runOnStart(): Unit = {
         val c = counter.getAndDecrement
         //println(s"started $c on ${Thread.currentThread()}")
         //Thread.sleep(1000)
@@ -94,7 +94,7 @@ object AreaSB extends SimpleSwingApplication {
           animate(step + 1)
         }
       }
-      workAreas.foreach(updateArea(step, _, runOnstart))
+      workAreas.foreach(updateArea(step, _, runOnStart()))
     }
 
     def init(area: Area, workAreas: List[Area]): List[Area] = {
@@ -117,7 +117,7 @@ object AreaSB extends SimpleSwingApplication {
 
     def updateArea(step: Int, area: Area, runOnStart: => Unit): Unit = future {
       runOnStart
-        area foreach { point =>
+      area foreach { point =>
         point.iter = (255 * (point.x + point.y) / (width + height) + step) % 255
       }
     }

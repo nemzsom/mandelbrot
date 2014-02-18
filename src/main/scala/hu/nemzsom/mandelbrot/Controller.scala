@@ -47,7 +47,7 @@ class Controller(panel: ImagePanel) {
   }
 
   def startNewCalculation(area: Area): Calculation =
-    new Calculation(area,  new BImagePlotter(panel.image, new Black_and_WhiteColorMap))
+    new Calculation(area,  new BImagePlotter(panel.image, new LinearColorMap(50)))
 
   def onRequest(req: UIRequest): Unit = {
     requests = requests.enqueue(req)
@@ -98,7 +98,7 @@ class Controller(panel: ImagePanel) {
           if (startToSettle.get) {
             if (settled < 10 && cleanNeeded.getAndSet(false))
               area.filter(_.location == Unsettled) foreach plotter.plot // clean
-            if (settled == 0)
+            if (settled == 0 && subscription != null)
               subscription.unsubscribe()
           }
           else if (maxIter > calculator.Config.iterationStep && settled > 0) {
@@ -106,16 +106,11 @@ class Controller(panel: ImagePanel) {
           }
           panel.repaint()
       },
-      error => logger.error(s"Error happened $error"),
+      error => logger.error("Error happened", error),
       () => Swing.onEDT {
         logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
         running = false
         if (!requests.isEmpty) processRequests()
-        else {
-          // cleaning
-
-          panel.repaint()
-        }
       }
     )
 

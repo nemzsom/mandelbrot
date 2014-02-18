@@ -1,5 +1,8 @@
 package hu.nemzsom.mandelbrot
 
+import java.awt.Color
+import scala.collection.mutable.{ArrayBuffer, SynchronizedBuffer}
+
 trait ColorMap {
 
   def color(point: Point): Int
@@ -15,31 +18,33 @@ class Black_and_WhiteColorMap extends ColorMap {
 
 class LinearColorMap(nOfColors: Int) extends ColorMap {
 
-  require(nOfColors % 3 == 0) // TODO allow numbers that isn't divisible by 3
+  val saturation = 0.7f
+  val brightness = 0.9f
 
   val colorMap: Array[Int] = {
-    val third = nOfColors / 3
-    val r, g, b = new Array[Int](third)
-
-    def fill(arr: Array[Int], mask: Int, shift: Int): Unit = {
-      val scale = 255 / arr.size
-      for (i <- 0 until arr.size) {
-        arr(i) = mask | i * scale << shift
-      }
+    var i = -1
+    Array.fill(nOfColors) {
+      i += 1
+      Color.HSBtoRGB(i / nOfColors.toFloat, saturation, brightness)
     }
-
-    Seq(
-      (r, 0x00000000, 16),
-      (g, 0x00FF0000, 8),
-      (b, 0x00FFFF00, 0)
-    ).foreach { case (arr, mask, shift) => fill(arr, mask, shift) }
-
-    r ++ g ++ b :+ 0
   }
 
   def color(point: Point): Int = point.location match {
-    case Inside => 0
     case Outside(iter) => colorMap(iter % nOfColors)
-    case Unsettled => 255
+    case _ => 0 // Inside or Unsettled
   }
+}
+
+class HistogramColorMap(nOfColors: Int) extends LinearColorMap(nOfColors) {
+
+  val histogram = new ArrayBuffer[Int] with SynchronizedBuffer[Int]
+
+  override def color(point: Point): Int = point.location match {
+    case Outside(iter) =>
+      histogram(iter) += 1
+      colorMap(iter % nOfColors)
+    case _ => 0 // Inside or Unsettled
+  }
+
+  def finalize
 }
