@@ -47,7 +47,7 @@ class Controller(panel: ImagePanel) {
   }
 
   def startNewCalculation(area: Area): Calculation =
-    new Calculation(area,  new BImagePlotter(panel.image, new LinearColorMap(50)))
+    new Calculation(area,  new BImagePlotter(panel.image, new LinearColorMap(450, ColorMap.fromColors((237, 1f, 0.35f), (40, 1f, 1f)))))
 
   def onRequest(req: UIRequest): Unit = {
     requests = requests.enqueue(req)
@@ -111,6 +111,10 @@ class Controller(panel: ImagePanel) {
         logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
         running = false
         if (!requests.isEmpty) processRequests()
+        else {
+          plotter.finish(area)
+          panel.repaint()
+        }
       }
     )
 

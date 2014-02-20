@@ -14,7 +14,7 @@ case class CalcStat(total: Int, settled: Int, maxIter: Int)
 /**
  * It calculates an area's points.
  */
-class Calculator(mainArea: Area, plotter: Plotter)(implicit ec: ExecutionContext) {
+class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: ExecutionContext) {
 
   object Config {
     val maxDividableSize = 14

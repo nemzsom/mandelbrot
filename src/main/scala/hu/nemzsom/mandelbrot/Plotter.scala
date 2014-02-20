@@ -6,6 +6,8 @@ trait Plotter {
 
   def plot(p: Point): Unit
 
+  def finish(points: Traversable[Point]): Unit
+
 }
 
 class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
@@ -21,4 +23,12 @@ class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
   // DEBUG END
 
   def plot(p: Point): Unit = pixels(p.index) = colorMap.color(p)
+
+  def finish(points: Traversable[Point]): Unit = colorMap.finish match {
+    case Some(map) =>
+      points foreach { p =>
+        pixels(p.index) = map.color(p)
+      }
+    case None =>
+  }
 }
