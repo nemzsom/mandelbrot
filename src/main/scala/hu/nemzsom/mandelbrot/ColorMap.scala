@@ -66,11 +66,12 @@ object ColorMap {
       val h = getHue(fromH, toH, pos)
       val s = get_S_or_B(fromS, toS, pos)
       val b = get_S_or_B(fromB, toB, pos)
-      println(s"index: $index, k: $k, i: $i, pos: $pos. ($h, $s, $b)")
       Color.HSBtoRGB(h / 360f, s, b)
     }
     f
   }
+
+  def Blue_Yellow_Map(nOfColors: Int) = fromColors((236, 1f, 0.36f), (202, 0.44f, 0.95f), (160, 0.06f, 1f), (70, 0.12f, 0.98f), (40, 0.98f, 1f), (346, 0.85f, 0.36f))(nOfColors)
 }
 
 class Black_and_WhiteColorMap extends ColorMap {
@@ -142,5 +143,35 @@ class HistogramColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends Li
         case _ =>  0 // Inside or Unsettled
       }
     })
+  }
+}
+
+class SmoothColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends LinearColorMap(nOfColors, mapFunc) {
+
+  override def finish: Option[ColorMap] = {
+    Option(new ColorMap {
+      override def color(point: Point): Int = point.location match {
+        case Outside(iter) =>
+          if (iter > point.iter) Calculator.iterate(point, iter)
+          assert(point.iter == iter)
+          val smoothIter = iter + 1 - Math.log(Math.log(!point.iterValue))/Math.log(2)
+          val color1 = colorMap(smoothIter.toInt % nOfColors)
+          val color2 = colorMap((smoothIter.toInt + 1) % nOfColors)
+          linearInterpolate(color1, color2, smoothIter % 1)
+        case _ =>  0 // Inside or Unsettled
+      }
+    })
+  }
+
+  def linearInterpolate(c1: Int, c2: Int, pos: Double): Int = {
+    def getRGB(rgb: Int): (Int, Int, Int) =
+      ((0x00FF0000 & rgb) >> 16, (0x0000FF00 & rgb) >> 8, 0x000000FF & rgb)
+    def interpolate(a: Int, b: Int): Int = (a + (b - a) * pos).toInt
+    val (r1, g1, b1) = getRGB(c1)
+    val (r2, g2, b2) = getRGB(c2)
+    val r = interpolate(r1, r2)
+    val g = interpolate(g1, g2)
+    val b = interpolate(b1, b2)
+    r << 16 | g << 8 | b
   }
 }

@@ -51,33 +51,64 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
       //logger.trace(s"$this update with total: $total, settled: $settled.")
       // DEBUG END
       if (total > 0) {
-        _count_settled.addAndGet(settled)
-        endCheck(_remaining_total.addAndGet(-total))
+        val totalSettled = _count_settled.addAndGet(settled)
+        if (_remaining_total.addAndGet(-total) == 0) {
+          // This cycle finished
+          //logger.trace(s"CYCLE FINISH $this")
+          observer.onNext(CalcStat(mainArea.size - _initially_settled, totalSettled, maxIter))
+          var nextCycle = next
+          var nextInitiallySetted = _initially_settled + totalSettled
+          while (prevFinished(nextCycle, nextInitiallySetted) == 0){
+            nextInitiallySetted = nextCycle._initially_settled + nextCycle._count_settled.get
+            nextCycle = nextCycle.next
+          }
+        }
       }
     }
 
-    private def previousFinished(initiallySettled: Int): Unit = {
+    def prevFinished(nextCycle: IterationCycle, initiallySettled: Int): Int = {
+      if (initiallySettled < mainArea.size) {
+        //logger.trace(s"PREV FINISHED for $nextCycle. initiallySettled: $initiallySettled.")
+        nextCycle._initially_settled = initiallySettled
+        val remaining = nextCycle._remaining_total.addAndGet(-initiallySettled)
+        if (remaining == 0)
+          observer.onNext(CalcStat(mainArea.size - initiallySettled, nextCycle._count_settled.get, nextCycle.maxIter))
+        //logger.trace(s"PREV FINISHED END for $nextCycle. Remaining: $remaining")
+        remaining
+      }
+      else -1
+    }
+
+    /*private def previousFinished(initiallySettled: Int): Unit = {
       // DEBUG
-      //logger.trace(s"$this prev finished with initiallySettled: $initiallySettled.")
+      logger.trace(s"$this prev finished with initiallySettled: $initiallySettled. (mainArea size: ${mainArea.size}})")
       // DEBUG END
       if (initiallySettled != 0) {
         _initially_settled = initiallySettled
         if (initiallySettled < mainArea.size) // to prevent infinite recursion
-          endCheck(_remaining_total.addAndGet(-initiallySettled))
+            endCheck(_remaining_total.addAndGet(-initiallySettled))
       }
-    }
+    }*/
 
-    private def endCheck(remaining: Int): Unit = {
+    /*private def isEnded(remaining: Int): Boolean = {
       // DEBUG
-      //logger.trace(s"Check with remaining: $remaining.")
+      logger.trace(s"Check with remaining: $remaining.")
       // DEBUG END
       assert(remaining >= 0, s"remaining: $remaining") // TODO remove after debug
-      if (remaining == 0) {
+      val ended = remaining == 0
+      if (ended) {
         val settled = _count_settled.get
         observer.onNext(CalcStat(mainArea.size - _initially_settled, settled, maxIter))
-        next.previousFinished(_initially_settled + settled)
+        //next.previousFinished(_initially_settled + settled)
+
+        next._initially_settled = _initially_settled + settled
+        if (next._initially_settled < mainArea.size) {
+          next._remaining_total.addAndGet(next._initially_settled)
+        }
+
       }
-    }
+      ended
+    }*/
 
     def updateProcessStopped(): Unit = {
       assert(updateProcessCount.get() > 0) // TODO remove after debug
@@ -290,33 +321,8 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
        * @return true if the point counts as updated in the current calculation
        */
       protected def updatePoint(point: Point): Boolean = {
-        iterate(point)
+        Calculator.iterate(point, maxIter)
         true
-      }
-
-      /**
-       * Performs the mandelbrot iteration on one point to the specified maxIteration. It expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
-       * @param point to update
-       */
-      protected def iterate(point: Point): Unit =
-        if (point.iter < maxIter) {
-          val c = point.complexValue
-          @tailrec def loop(iter: Int, z: Complex): Unit = {
-            val escaped = z.escaped
-            if (iter == maxIter || escaped) {
-              point.iter = iter
-              point.iterValue = z
-              if (escaped) point.location = Outside(iter)
-            }
-            else loop(iter + 1, z * z + c)
-          }
-          val z = point.iterValue
-          loop(point.iter + 1, z * z + c)
-        }
-
-      implicit class ComplexOps(c: Complex) {
-
-        def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
       }
     }
 
@@ -359,7 +365,34 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
       override def update() = Future.successful(continue(points, cycle.next))
     }
   }
+}
 
+object Calculator {
+
+  /**
+   * Performs the mandelbrot iteration on one point to the specified maxIteration. It expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
+   * @param point to update
+   */
+  def iterate(point: Point, maxIter: Int): Unit =
+    if (point.iter < maxIter) {
+      val c = point.complexValue
+      @tailrec def loop(iter: Int, z: Complex): Unit = {
+        val escaped = z.escaped
+        if (iter == maxIter || escaped) {
+          point.iter = iter
+          point.iterValue = z
+          if (escaped) point.location = Outside(iter)
+        }
+        else loop(iter + 1, z * z + c)
+      }
+      val z = point.iterValue
+      loop(point.iter + 1, z * z + c)
+    }
+
+  implicit class ComplexOps(c: Complex) {
+
+    def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
+  }
 }
 
 

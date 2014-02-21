@@ -5,7 +5,6 @@ import scala.math._
 /** from http://www.stoyanr.com/2013/02/complex-numbers-in-scala.html 
  */
 case class Complex(re: Double, im: Double) extends Ordered[Complex] {
-  private val modulus = sqrt(pow(re, 2) + pow(im, 2))
 
   // Constructors
   def this(re: Double) = this(re, 0)
@@ -14,7 +13,7 @@ case class Complex(re: Double, im: Double) extends Ordered[Complex] {
   def unary_+ = this
   def unary_- = new Complex(-re, -im)
   def unary_~ = new Complex(re, -im) // conjugate
-  def unary_! = modulus
+  def unary_! = sqrt(pow(re, 2) + pow(im, 2))
 
   // Comparison
   def compare(that: Complex) = !this compare !that

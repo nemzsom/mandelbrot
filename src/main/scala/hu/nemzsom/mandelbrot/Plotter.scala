@@ -1,6 +1,8 @@
 package hu.nemzsom.mandelbrot
 
 import java.awt.image.{DataBufferInt, BufferedImage}
+import com.typesafe.scalalogging.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 trait Plotter {
 
@@ -11,6 +13,8 @@ trait Plotter {
 }
 
 class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
+
+  protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.BImagePlotter")
 
   val pixels = {
     val raster = img.getRaster
@@ -26,9 +30,13 @@ class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
 
   def finish(points: Traversable[Point]): Unit = colorMap.finish match {
     case Some(map) =>
+      // DEBUG
+      val time = System.nanoTime
+      // DEBUG END
       points foreach { p =>
         pixels(p.index) = map.color(p)
       }
+      logger.info(s"AFTER_COLOR done in ${(System.nanoTime - time) / 1000000} ms")
     case None =>
   }
 }

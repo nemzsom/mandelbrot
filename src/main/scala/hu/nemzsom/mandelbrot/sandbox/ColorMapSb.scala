@@ -121,7 +121,9 @@ object ColorMapSb extends SimpleSwingApplication {
   val c2 = fromColors((237, 1f, 0.35f), (40, 1f, 1f))
   val c3 = fromColors((100, 0.5f, 0.5f), (200, 0.7f, 0.7f), (300, 0.5f, 0.5f))
 
-  updateColors(c2)
+  val blue_yellow = fromColors((236, 1f, 0.36f), (202, 0.44f, 0.95f), (160, 0.06f, 1f), (70, 0.12f, 0.98f), (40, 0.98f, 1f), (346, 0.85f, 0.36f))
+
+  updateColors(blue_yellow)
 
   def top = new MainFrame {
     title = "ColorMapSb"
