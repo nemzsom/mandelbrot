@@ -51,65 +51,48 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
       //logger.trace(s"$this update with total: $total, settled: $settled.")
       // DEBUG END
       if (total > 0) {
-        val totalSettled = _count_settled.addAndGet(settled)
-        if (_remaining_total.addAndGet(-total) == 0) {
-          // This cycle finished
-          //logger.trace(s"CYCLE FINISH $this")
-          observer.onNext(CalcStat(mainArea.size - _initially_settled, totalSettled, maxIter))
-          var nextCycle = next
-          var nextInitiallySetted = _initially_settled + totalSettled
-          while (prevFinished(nextCycle, nextInitiallySetted) == 0){
-            nextInitiallySetted = nextCycle._initially_settled + nextCycle._count_settled.get
-            nextCycle = nextCycle.next
-          }
-        }
+        _count_settled.addAndGet(settled)
+        if (_remaining_total.addAndGet(-total) == 0) finishLoop()
       }
     }
 
-    def prevFinished(nextCycle: IterationCycle, initiallySettled: Int): Int = {
+    /**
+     * It called when this cycle finished. It loops through the next cycle's, calling the [[previousFinished]] until the first non-finishing cycle.
+     * @note While loop instead of a recursive call, to prevent stackoverflow errors.
+     */
+    private def finishLoop(): Unit = {
+      thisFinished()
+      var cycle = next
+      var initiallySettled = _initially_settled + _count_settled.get
+      while (cycle.previousFinished(initiallySettled) == 0) {
+        initiallySettled += cycle._count_settled.get
+        cycle = cycle.next
+      }
+    }
+
+    /** Fires th onNext event on the observer */
+    private def thisFinished(): Unit =
+      observer.onNext(CalcStat(mainArea.size - _initially_settled, _count_settled.get, maxIter))
+
+    /**
+     * Notify the cycle that the previous cycle has finished.
+     * @param initiallySettled Already settled points count by the beginning of this cycle.
+     * @return the remaining points count
+     */
+    private def previousFinished(initiallySettled: Int): Int = {
       if (initiallySettled < mainArea.size) {
-        //logger.trace(s"PREV FINISHED for $nextCycle. initiallySettled: $initiallySettled.")
-        nextCycle._initially_settled = initiallySettled
-        val remaining = nextCycle._remaining_total.addAndGet(-initiallySettled)
-        if (remaining == 0)
-          observer.onNext(CalcStat(mainArea.size - initiallySettled, nextCycle._count_settled.get, nextCycle.maxIter))
-        //logger.trace(s"PREV FINISHED END for $nextCycle. Remaining: $remaining")
+        _initially_settled = initiallySettled
+        val remaining = _remaining_total.addAndGet(-initiallySettled)
+        if (remaining == 0) thisFinished()
         remaining
       }
       else -1
     }
 
-    /*private def previousFinished(initiallySettled: Int): Unit = {
-      // DEBUG
-      logger.trace(s"$this prev finished with initiallySettled: $initiallySettled. (mainArea size: ${mainArea.size}})")
-      // DEBUG END
-      if (initiallySettled != 0) {
-        _initially_settled = initiallySettled
-        if (initiallySettled < mainArea.size) // to prevent infinite recursion
-            endCheck(_remaining_total.addAndGet(-initiallySettled))
-      }
-    }*/
-
-    /*private def isEnded(remaining: Int): Boolean = {
-      // DEBUG
-      logger.trace(s"Check with remaining: $remaining.")
-      // DEBUG END
-      assert(remaining >= 0, s"remaining: $remaining") // TODO remove after debug
-      val ended = remaining == 0
-      if (ended) {
-        val settled = _count_settled.get
-        observer.onNext(CalcStat(mainArea.size - _initially_settled, settled, maxIter))
-        //next.previousFinished(_initially_settled + settled)
-
-        next._initially_settled = _initially_settled + settled
-        if (next._initially_settled < mainArea.size) {
-          next._remaining_total.addAndGet(next._initially_settled)
-        }
-
-      }
-      ended
-    }*/
-
+    /**
+     * Called when az update branch finishes in this cycle.
+     * If the process count reaches zero, tho onCompleted event fired on the observer.
+     */
     def updateProcessStopped(): Unit = {
       assert(updateProcessCount.get() > 0) // TODO remove after debug
       if (updateProcessCount.decrementAndGet() == 0) {
@@ -127,9 +110,10 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
   def calculate(): Observable[CalcStat] = Observable.create(
     (observer: Observer[CalcStat]) => {
       val firstCycle = new IterationCycle(iterationStep, observer)
-      divideInitially foreach { area =>
-        updateProcessCount.incrementAndGet()
-        calcWithBorder(area, Updater.start(area.border, firstCycle))
+      divideInitially foreach {
+        area =>
+          updateProcessCount.incrementAndGet()
+          calcWithBorder(area, Updater.start(area.border, firstCycle))
       }
       subscription
     }
@@ -138,7 +122,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
   def divideInitially: List[Area] = {
     def split(area: Area, need: Int): List[Area] =
       if ((need <= 0 && (area.widthAtComplexPane < 4 || area.heightAtComplexPane < 4)) ||
-          area.width < 4 || area.height < 4) List(area)
+        area.width < 4 || area.height < 4) List(area)
       else {
         val (a1, a2) =
           if (area.width > area.height) area.splitVertical
@@ -190,9 +174,10 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
     else {
       // Inside or outside (with same iter) border
       val innerArea = inner(area)
-      innerArea.foreach{ point =>
-        point.location = loc
-        plotter.plot(point)
+      innerArea.foreach {
+        point =>
+          point.location = loc
+          plotter.plot(point)
       }
       cycle.updated(innerAreaSize, innerAreaSize)
       cycle.updateProcessStopped()
@@ -200,15 +185,15 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
   }
 
   private def divideAndCalc(area: Area, cycle: IterationCycle): Unit = {
-      def calc(a1: Area, a2: Area, dividingLine: Area): Unit = {
-        Updater.start(dividingLine, cycle).update().onComplete {
-          case Success(_) =>
-            updateProcessCount.incrementAndGet()
-            calcWithBorder(a1, Updater.completed(a1.border, cycle))
-            calcWithBorder(a2, Updater.completed(a2.border, cycle))
-          case Failure(t) => logger.error("Divide line update failed", t)
-        }
+    def calc(a1: Area, a2: Area, dividingLine: Area): Unit = {
+      Updater.start(dividingLine, cycle).update().onComplete {
+        case Success(_) =>
+          updateProcessCount.incrementAndGet()
+          calcWithBorder(a1, Updater.completed(a1.border, cycle))
+          calcWithBorder(a2, Updater.completed(a2.border, cycle))
+        case Failure(t) => logger.error("Divide line update failed", t)
       }
+    }
     if (area.width > area.height) {
       val (left, right) = area.splitVertical
       val dividingLine = area.subArea(left.width - 1, 1, 2, area.height - 2)
@@ -233,7 +218,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
       updater.cycle.updateProcessStopped()
     }
 
-  private def isDividable(area : Area): Boolean =
+  private def isDividable(area: Area): Boolean =
     area.width >= maxDividableSize || area.height >= maxDividableSize
 
   private def isUniform(points: Traversable[Point]): Boolean =
@@ -285,30 +270,31 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
 
       def update(): Future[Updater] = future {
         // debug BEGIN
-//              logger.trace(s"UPDATE at $cycle")
-//              points.foreach ( point => debugPixels(point.index) = 255 << 16 )
-//              debugPanel.repaint()
-//              debugQuene.take
+        //              logger.trace(s"UPDATE at $cycle")
+        //              points.foreach ( point => debugPixels(point.index) = 255 << 16 )
+        //              debugPanel.repaint()
+        //              debugQuene.take
         // debug END
         var total = 0
         var settled = 0
         var unsettledPoints = List.empty[Point]
-        points.foreach { point =>
-          if (updatePoint(point)) {
-            total += 1
-            if (point.location == Unsettled) {
-              unsettledPoints = point :: unsettledPoints
+        points.foreach {
+          point =>
+            if (updatePoint(point)) {
+              total += 1
+              if (point.location == Unsettled) {
+                unsettledPoints = point :: unsettledPoints
+              }
+              else {
+                settled += 1
+                plotter.plot(point)
+              }
             }
-            else {
-              settled += 1
-              plotter.plot(point)
-            }
-          }
         }
         // debug BEGIN
-//              points foreach plotter.plot
-//              logger.trace(s"DONE at $cycle. total: $total, settled: $settled")
-//              debugPanel.repaint()
+        //              points foreach plotter.plot
+        //              logger.trace(s"DONE at $cycle. total: $total, settled: $settled")
+        //              debugPanel.repaint()
         // debug END
         cycle.updated(total, settled)
         if (total == settled) empty(cycle.next)
@@ -364,7 +350,9 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
 
       override def update() = Future.successful(continue(points, cycle.next))
     }
+
   }
+
 }
 
 object Calculator {
@@ -393,6 +381,7 @@ object Calculator {
 
     def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
   }
+
 }
 
 
