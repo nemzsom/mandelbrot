@@ -153,7 +153,6 @@ class SmoothColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends Linea
       override def color(point: Point): Int = point.location match {
         case Outside(iter) =>
           if (iter > point.iter) Calculator.iterate(point, iter)
-          assert(point.iter == iter)
           val smoothIter = iter + 1 - Math.log(Math.log(!point.iterValue))/Math.log(2)
           val color1 = colorMap(smoothIter.toInt % nOfColors)
           val color2 = colorMap((smoothIter.toInt + 1) % nOfColors)

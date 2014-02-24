@@ -22,10 +22,6 @@ class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
     databuffer.getData
   }
 
-  // DEBUG
-  debugPixels = pixels
-  // DEBUG END
-
   def plot(p: Point): Unit = pixels(p.index) = colorMap.color(p)
 
   def finish(points: Traversable[Point]): Unit = colorMap.finish match {

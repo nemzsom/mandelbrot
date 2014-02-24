@@ -7,7 +7,7 @@ import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import scala.concurrent.ExecutionContext
 import scala.swing.Swing
 import scala.collection.immutable.Queue
-import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
+import java.util.concurrent.atomic.AtomicBoolean
 
 sealed trait UIRequest
 case class Resize(width: Int, height: Int) extends UIRequest
@@ -24,7 +24,7 @@ class Controller(panel: ImagePanel) {
 
   var requests = Queue.empty[UIRequest]
   var cleanNeeded = new AtomicBoolean(false)
-  var calculation = startNewCalculation(Area(Complex(-2, -2), 4, panel.image.getWidth, panel.image.getHeight))
+  var calculation = startNewCalculation(Area(Complex(-2, -2), 4.0 / (panel.image.getWidth - 1), panel.image.getWidth, panel.image.getHeight))
 
   panel.resized.subscribe { dimension =>
     logger.debug(s"panel resized to $dimension")

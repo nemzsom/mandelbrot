@@ -11,14 +11,10 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.App")
 
-  val width = 300
-  val height = 300
+  val width = 1000
+  val height = 1000
 
   val panel = new ImagePanel(width, height)
-
-  // DEBUG
-  debugPanel = panel
-  // DEBUG END
 
   val controller = new Controller(panel)
 

@@ -13,7 +13,7 @@ case class Complex(re: Double, im: Double) extends Ordered[Complex] {
   def unary_+ = this
   def unary_- = new Complex(-re, -im)
   def unary_~ = new Complex(re, -im) // conjugate
-  def unary_! = sqrt(pow(re, 2) + pow(im, 2))
+  def unary_! = sqrt(pow(re, 2) + pow(im, 2)) // modulo
 
   // Comparison
   def compare(that: Complex) = !this compare !that

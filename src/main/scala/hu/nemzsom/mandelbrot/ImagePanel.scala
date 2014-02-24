@@ -65,7 +65,7 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
     val newImage = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB)
     val g = newImage.getGraphics
     g.drawImage(_image, 0, 0, null)
-    g.dispose
+    g.dispose()
     _image = newImage
   }
 
@@ -73,7 +73,7 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
     val newImage = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB)
     val g = newImage.getGraphics
     g.drawImage(_image, diffX, diffY, null)
-    g.dispose
+    g.dispose()
     _image = newImage
   }
 
@@ -82,7 +82,7 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
     val newImage = new BufferedImage(_width, _height, BufferedImage.TYPE_INT_RGB)
     val g = newImage.getGraphics
     g.drawImage(scaleImage(_image, factor), (atX - atX * factor).toInt, (atY - atY * factor).toInt, null)
-    g.dispose
+    g.dispose()
     _image = newImage
   }
 

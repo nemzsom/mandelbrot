@@ -10,64 +10,35 @@ import org.junit.Assert
 class AreaTest extends FunSuite {
 
   /**
-   *  x,y:                          complexes:
-   *  -----                         ------------
-   *  (0,0) | (1,0) | (2,0)   |   (0,0) | (0,1) | (0,2)
-   *  (0,1) | (1,1) | (2,1)   |   (1,0) | (1,1) | (1,2)
-   *  (0,2) | (1,2) | (2,2)   |   (2,0) | (2,1) | (2,2)
+   *    x  0       1       2
+   *  y ----------------------
+   *  0 |(0,0) | (0,1) | (0,2)
+   *  1 |(1,0) | (1,1) | (1,2)
+   *  2 |(2,0) | (2,1) | (2,2)
    */
   trait TestArea {
     val scale = 1.0
-    val area: Area = Area((0, 0), scale, 3, 3)
+    val area: Area = Area(Complex.ZERO, scale, 3, 3)
     val data = area.data
-  }
-
-  def assertCoords(point: Point, coords: (Int, Int)) = {
-    val (x, y) = coords
-    assert(point.x === x)
-    assert(point.y === y)
-  }
-
-  def assertPoint(point: Point, coords: (Int, Int), scale: Double) = {
-    assertCoords(point, coords)
-    assert(point.complexValue === Point.complexAt(coords._1, coords._2, scale))
-  }
-
-  test("Point.complexAt should calculate the complex value based on x,y and scale") {
-    assert(Point.complexAt(0, 0, 1.0) === Complex.ZERO)
-    assert(Point.complexAt(2, 3, 1.0) === Complex(3, 2))
-    assert(Point.complexAt(2, 3, 0.5) === Complex(1.5, 1))
   }
 
   test("apply with scale") {
     val scale = 1.0
-    val area = Area((2, 3), scale, 3, 2)
+    val area = Area(Complex(1, 10), scale, 3, 2)
     area.data.zipWithIndex.forall{ case (point, index) =>
       point.index == index
     }
-    assertCoords(area.pointAt(0, 0), (2, 3))
-    assertCoords(area.pointAt(2, 0), (4, 3))
-    assertCoords(area.pointAt(0, 1), (2, 4))
-    assertCoords(area.pointAt(2, 1), (4, 4))
-  }
-
-  test("apply with complex specifications") {
-    val area = Area(Complex(-1, -1), 2, 5, 9)
-    area.data.zipWithIndex.forall{ case (point, index) =>
-      point.index == index
-    }
-    val expectedScale = 0.25
-    assert(area.scale === expectedScale)
-    assertPoint(area.topLeft, (-4, -4), expectedScale)
-    assertPoint(area.data.last, (0, 4), expectedScale)
-    assertPoint(area.pointAt(4, 4), (0, 0), expectedScale)
+    assert(area.pointAt(0, 0).complexValue === Complex(1, 10))
+    assert(area.pointAt(2, 0).complexValue === Complex(1, 12))
+    assert(area.pointAt(0, 1).complexValue === Complex(2, 10))
+    assert(area.pointAt(2, 1).complexValue === Complex(2, 12))
   }
 
   test("topLeft") {
     new TestArea {
-      assertCoords(area.topLeft, (0, 0))
+      assert(area.topLeft.complexValue === Complex(0, 0))
       val area2 = new Area(scale, data, 3, 4, 2, 2)
-      assertCoords(area2.topLeft, (1, 1))
+      assert(area2.topLeft.complexValue === Complex(1, 1))
     }
   }
 
@@ -75,39 +46,35 @@ class AreaTest extends FunSuite {
     new TestArea {
       for (x <- 0 until area.width; y <- 0 until area.height) {
         val point = area.pointAt(x, y)
-        assert(point.x === x, "x should match")
-        assert(point.y === y, "y should match")
+        assert(point.complexValue === Complex(y, x))
       }
     }
   }
 
   test("width and height at complex pane") {
-    val area = Area(Complex(-2, -2), 4, 50, 100)
-    Assert.assertEquals(2.0, area.widthAtComplexPane, 0.05)
-    Assert.assertEquals(4.0, area.heightAtComplexPane, 0.05)
+    val area = Area(Complex(-2, -2), 2.0 / 50, 51, 101)
+    Assert.assertEquals(2.0, area.widthAtComplexPane, 0.001)
+    Assert.assertEquals(4.0, area.heightAtComplexPane, 0.001)
   }
 
   test("foreach") {
     new TestArea {
       area foreach  { point =>
-        val px = point.x
-        val py = point.y
-        point.iter = px + py
+        point.iter = point.index
         point.iterValue =  point.complexValue * 2
-        (point.x, point.y) match {
-          case (x, y) if x == y => point.location = Unsettled
-          case (x, y) if x > y => point.location = Inside
-          case (x, y) => point.location = Outside(x + y)
+        point.iter match {
+          case multiplyOf10 if multiplyOf10 % 10 == 0 => point.location = Unsettled
+          case even if even % 2 == 0 => point.location = Inside
+          case odd => point.location = Outside(point.iter)
         }
       }
-
       assert(data.forall { point =>
-        point.iter == point.x + point.y &&
+        point.iter == point.index &&
         point.iterValue == point.complexValue * 2 &&
         (point.location match {
-          case Unsettled => point.x == point.y
-          case Inside => point.x > point.y
-          case Outside(xy) => point.x < point.y && xy == point.x + point.y
+          case Unsettled => point.iter % 10 == 0
+          case Inside => point.iter % 2 == 0
+          case Outside(xy) => point.iter % 2 == 1 && point.iter == xy
         })
       })
     }
@@ -116,34 +83,34 @@ class AreaTest extends FunSuite {
   test("subArea square") {
     new TestArea {
       val subArea = area.subArea(1, 1, 2, 2)
-      assertCoords(subArea.pointAt(0, 0), (1, 1))
-      assertCoords(subArea.pointAt(1, 0), (2, 1))
-      assertCoords(subArea.pointAt(0, 1), (1, 2))
-      assertCoords(subArea.pointAt(1, 1), (2, 2))
+      assert(subArea.pointAt(0, 0).complexValue == Complex(1, 1))
+      assert(subArea.pointAt(1, 0).complexValue == Complex(1, 2))
+      assert(subArea.pointAt(0, 1).complexValue == Complex(2, 1))
+      assert(subArea.pointAt(1, 1).complexValue == Complex(2, 2))
     }
   }
 
   test("subArea rectangle") {
     new TestArea {
       val subArea = area.subArea(1, 0, 2, 3)
-      assertCoords(subArea.pointAt(0, 0), (1, 0))
-      assertCoords(subArea.pointAt(1, 0), (2, 0))
-      assertCoords(subArea.pointAt(0, 2), (1, 2))
-      assertCoords(subArea.pointAt(1, 2), (2, 2))
+      assert(subArea.pointAt(0, 0).complexValue == Complex(0, 1))
+      assert(subArea.pointAt(1, 0).complexValue == Complex(0, 2))
+      assert(subArea.pointAt(0, 2).complexValue == Complex(2, 1))
+      assert(subArea.pointAt(1, 2).complexValue == Complex(2, 2))
     }
   }
 
   test("subArea line") {
     new TestArea {
       val subArea = area.subArea(0, 2, 3, 1)
-      assertCoords(subArea.pointAt(0, 0), (0, 2))
-      assertCoords(subArea.pointAt(1, 0), (1, 2))
-      assertCoords(subArea.pointAt(2, 0), (2, 2))
+      assert(subArea.pointAt(0, 0).complexValue == Complex(2, 0))
+      assert(subArea.pointAt(1, 0).complexValue == Complex(2, 1))
+      assert(subArea.pointAt(2, 0).complexValue == Complex(2, 2))
     }
   }
 
   test("split vertical with even width") {
-    val area: Area = Area((0, 0), 1, 2, 1)
+    val area: Area = Area(Complex(0, 0), 1, 2, 1)
     val (left, right) = area.splitVertical
     assert(Seq(left, right).forall(a => a.width == 1 && a.height == 1))
     assert(left.topLeft.index === 0)
@@ -151,7 +118,7 @@ class AreaTest extends FunSuite {
   }
 
   test("split vertical with odd width") {
-    val area: Area = Area((0, 0), 1, 3, 1)
+    val area: Area = Area(Complex(0, 0), 1, 3, 1)
     val (left, right) = area.splitVertical
     assert(Seq(left, right).forall(a => a.height == 1))
     assert(Seq(left, right).map(_.width) === Seq(1, 2))
@@ -160,7 +127,7 @@ class AreaTest extends FunSuite {
   }
 
   test("split horizontal with even width") {
-    val area: Area = Area((0, 0), 1, 1, 2)
+    val area: Area = Area(Complex(0, 0), 1, 1, 2)
     val (top, bottom) = area.splitHorizontal
     assert(Seq(top, bottom).forall(a => a.width == 1 && a.height == 1))
     assert(top.topLeft.index === 0)
@@ -168,7 +135,7 @@ class AreaTest extends FunSuite {
   }
 
   test("split horizontal with odd width") {
-    val area: Area = Area((0, 0), 1, 1, 3)
+    val area: Area = Area(Complex(0, 0), 1, 1, 3)
     val (top, bottom) = area.splitHorizontal
     assert(Seq(top, bottom).forall(a => a.width == 1))
     assert(Seq(top, bottom).map(_.height) === Seq(1, 2))
@@ -193,7 +160,6 @@ class AreaTest extends FunSuite {
     }
 
     def testResize(area: Area, newWidth: Int, newHeight: Int): Unit = {
-      require(area.topLeft.x == 0 && area.topLeft.y == 0)
       val resized = area.resize(newWidth, newHeight)
       assert(resized.width === newWidth)
       assert(resized.height === newHeight)
@@ -203,7 +169,7 @@ class AreaTest extends FunSuite {
         x <- 0 until newWidth
       } {
         val p = resized.pointAt(x, y)
-        assertCoords(p, (x, y))
+        assert(p.complexValue == Complex(y, x))
         assert(p.index === i)
         i += 1
       }
