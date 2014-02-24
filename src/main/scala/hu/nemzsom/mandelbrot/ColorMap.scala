@@ -3,12 +3,83 @@ package hu.nemzsom.mandelbrot
 import java.awt.Color
 import scala.collection.mutable.{ArrayBuffer, SynchronizedBuffer}
 import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.mutable
 
 trait ColorMap {
+  
+  def map(k: Float): Int
 
   def color(point: Point): Int
 
   def finish: Option[ColorMap] = None
+}
+
+case class ColorMark(hue: Int, saturation: Float, brightness: Float, position: Float) {
+  require (
+     hue >=0 && hue <=360 &&
+     saturation >= 0f && saturation <= 1f &&
+     brightness >= 0f && brightness <= 1f &&
+     position >= 0f && position <= 1f,
+     "hue must between 0 - 360, saturation, brightness and position between 0.0 - 1.0"
+  )
+}
+
+trait ContinuousColorMap extends ColorMap {
+
+  val colorMarks: List[ColorMark]
+
+  private lazy val colorRanges: List[(ColorMark, ColorMark)] = {
+    require(colorMarks.size > 1, "need least 2 colors")
+    require(colorMarks.head.position == 0.0f, "the first colorMark should begin at position 0.0")
+    require(
+      colorMarks.sliding(2).forall { case List(cm1, cm2) =>
+        cm1.position < cm2.position
+      }, ("colorMarks must be in ascending order")
+    )
+    val contColorMarks =
+      if (colorMarks.last.position == 1.0) colorMarks
+      else {
+        val firstCM = colorMarks.head
+        val lastCM = ColorMark(firstCM.hue, firstCM.saturation, firstCM.brightness, 1f)
+        colorMarks :+ lastCM
+      }
+    contColorMarks.sliding(2) map { case List(cm1, cm2) => (cm1, cm2)} toList
+  }
+      
+  def map(k: Float): Int = {
+    val (cm1, cm2) = colorRanges.find { case (cm1, cm2) => k >= cm1.position && k <= cm2.position }.get
+    val diff = k - cm1.position
+    val cInterval = cm2.position - cm1.position
+    def interpolate(from: Float, to: Float): Float = from + (to - from) * diff / cInterval
+    val hue =
+      if (Math.abs(cm1.hue - cm2.hue) > 180) {
+        if (cm2.hue > cm1.hue) interpolate(cm1.hue + 360, cm2.hue)
+        else interpolate(cm1.hue, cm2.hue + 360)
+      }
+      else interpolate(cm1.hue, cm2.hue)
+    val sat = interpolate(cm1.saturation, cm2.saturation)
+    val bri = interpolate(cm1.brightness, cm2.brightness)
+    Color.HSBtoRGB(hue / 360f, sat, bri)
+  }
+}
+
+trait IndexedColorMap extends ColorMap {
+
+  val nOfColors: Int
+
+  lazy val colorMap: Array[Int] = {
+    var i = -1.0f
+    Array.fill(nOfColors) {
+      i += 1.0f
+      map(i / (nOfColors - 1))
+    }
+  }
+
+  def color(point: Point): Int = point.location match {
+    case Outside(iter) => colorMap(iter % nOfColors)
+    case _ => 0 // Inside or Unsettled
+  }
+
 }
 
 object ColorMap {
@@ -74,29 +145,27 @@ object ColorMap {
   def Blue_Yellow_Map(nOfColors: Int) = fromColors((236, 1f, 0.36f), (202, 0.44f, 0.95f), (160, 0.06f, 1f), (70, 0.12f, 0.98f), (40, 0.98f, 1f), (346, 0.85f, 0.36f))(nOfColors)
 }
 
-class Black_and_WhiteColorMap extends ColorMap {
+class Black_and_WhiteColorMap extends IndexedColorMap with ContinuousColorMap {
 
-  def color(point: Point): Int = point.location match {
-    case Outside(iter) => if (iter % 2 == 0) 0 else 0xFFFFFFFF
-    case _ => 0 // Inside or Unsettled
-  }
+  val colorMarks: List[ColorMark] = List(ColorMark(0, 0, 0, 0), ColorMark(0, 0, 1, 1))
+  val nOfColors: Int = 2
 }
 
-class LinearColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends ColorMap {
+/*class LinearColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends ColorMap {
 
-  val colorMap: Array[Int] = {
+  /*val colorMap: Array[Int] = {
     val f = mapFunc(nOfColors)
     var i = -1
     Array.fill(nOfColors) {
       i += 1
       f(i)
     }
-  }
+  }*/
 
-  def color(point: Point): Int = point.location match {
+  /*def color(point: Point): Int = point.location match {
     case Outside(iter) => colorMap(iter % nOfColors)
     case _ => 0 // Inside or Unsettled
-  }
+  }*/
 }
 
 class HistogramColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends LinearColorMap(nOfColors, mapFunc) {
@@ -173,4 +242,4 @@ class SmoothColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends Linea
     val b = interpolate(b1, b2)
     r << 16 | g << 8 | b
   }
-}
+}*/

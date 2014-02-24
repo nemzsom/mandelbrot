@@ -47,7 +47,7 @@ class Controller(panel: ImagePanel) {
   }
 
   def startNewCalculation(area: Area): Calculation =
-    new Calculation(area,  new BImagePlotter(panel.image, new SmoothColorMap(150, ColorMap.Blue_Yellow_Map)))
+    new Calculation(area,  new BImagePlotter(panel.image, new Black_and_WhiteColorMap))
 
   def onRequest(req: UIRequest): Unit = {
     requests = requests.enqueue(req)
