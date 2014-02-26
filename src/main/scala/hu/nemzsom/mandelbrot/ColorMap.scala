@@ -81,41 +81,22 @@ trait IndexedColorMap extends ColorMap {
 
 object ColorMap {
 
-  def HSBCycleMap(nOfColors: Int): Int => Int = { index =>
-    Color.HSBtoRGB(index / nOfColors.toFloat, 0.7f, 0.9f)
-  }
+  class CustomCMap(val nOfColors: Int, colorMarks: List[ColorMark]) extends ContinuousColorMap(colorMarks) with IndexedColorMap
 
-  def RGBCycleMap(nOfColors: Int): Int => Int = { index =>
-    val k = index.toDouble / (nOfColors - 1)
-    def shiftFromDistance(pos: Double): Int = {
-      val dist = Math.abs(pos - k)
-      if (dist > 1.0 / 8) 0
-      else 255 - (dist * 8 * 255).toInt
-    }
-    if (k <= 1.0 / 8) {
-      val s = shiftFromDistance(0)
-      s << 16 | s << 8 | s
-    } else if ( k >= 7.0 / 8) {
-      val s = shiftFromDistance(1)
-      s << 16 | s << 8 | s
-    }
-    else {
-      val r = shiftFromDistance(1.0 / 4)
-      val g = shiftFromDistance(1.0 / 2)
-      val b = shiftFromDistance(3.0 / 4)
-      r << 16 | g << 8 | b
-    }
-  }
+  class Grayscale(nOfColors: Int) extends CustomCMap(nOfColors, List(ColorMark(0, 0, 0, 0), ColorMark(0, 0, 1, 0.5f)))
+
+  class BlackAndWhite extends Grayscale(2)
+
+  class BlueYellow(nOfColors: Int) extends CustomCMap(nOfColors, List(ColorMark(236, 0.9f, 0.25f, 0),
+                                                                      ColorMark(44, 0, 0.9f, 0.5f)))
+
+  class Sunset(nOfColors: Int) extends CustomCMap(nOfColors, List(ColorMark(15, 1f, 0.4f, 0),
+                                                                  ColorMark(60, 0.1f, 1f, 0.5f)))
+
+  class Brown(nOfColors: Int) extends CustomCMap(nOfColors, List(ColorMark(0, 1f, 0.07f, 0),
+                                                                 ColorMark(53, 0.5f, 1f, 0.3f)))
+
 }
-
-class Grayscale_ColorMap(val nOfColors: Int) extends ContinuousColorMap(List(ColorMark(0, 0, 0, 0), ColorMark(0, 0, 1, 0.5f))) with IndexedColorMap
-class Black_And_White_ColorMap extends Grayscale_ColorMap(2)
-class Blue_Yellow_ColorMap(val nOfColors: Int) extends ContinuousColorMap(List(ColorMark(236, 0.9f, 0.25f, 0),
-                                                                               ColorMark(236, 0.9f, 0.9f, 1f/5),
-                                                                               ColorMark(236, 0, 0.9f, 1f/5*2),
-                                                                               ColorMark(44, 0, 0.9f, 1f/5*2),
-                                                                               ColorMark(44, 0.9f, 0.9f, 1f/5*3),
-                                                                               ColorMark(44, 0.9f, 0.25f, 1f/5*4))) with IndexedColorMap
 
 trait HistogramColorMap extends IndexedColorMap {
 

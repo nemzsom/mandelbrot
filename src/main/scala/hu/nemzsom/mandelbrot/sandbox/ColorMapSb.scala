@@ -12,7 +12,7 @@ object ColorMapSb extends SimpleSwingApplication {
   val width = 900
   val height = 50
   val colorCount = 20
-  val colorMap = new Blue_Yellow_ColorMap(colorCount)
+  val colorMap = new ColorMap.Brown(colorCount)
 
   lazy val ui = new Panel {
 

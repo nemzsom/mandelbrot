@@ -11,9 +11,9 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.App")
 
-  val width = 300
-  val height = 300
-  val colorMap = new Blue_Yellow_ColorMap(60) with SmoothColorMap
+  val width = 640
+  val height = 480
+  val colorMap = new ColorMap.Brown(60) with SmoothColorMap
 
   val panel = new ImagePanel(width, height)
 
