@@ -156,7 +156,7 @@ trait SmoothColorMap extends ColorMap {
         case Outside(iter) =>
           if (iter > point.iter) Calculator.iterate(point, iter)
           val smoothIter = iter + 1 - Math.log(Math.log(!point.iterValue)) / Math.log(2)
-          map((smoothIter % nOfColors).toFloat / nOfColors)
+          map((Math.max(0f, smoothIter) % nOfColors).toFloat / nOfColors)
         case _ => 0 // Inside or Unsettled
       }
 
