@@ -8,13 +8,16 @@ import scala.concurrent.ExecutionContext
 import scala.swing.Swing
 import scala.collection.immutable.Queue
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.swing.Timer
+import java.awt.event.{ActionEvent, ActionListener}
+import scala.util.{Success, Failure}
 
 sealed trait UIRequest
 case class Resize(width: Int, height: Int) extends UIRequest
 case class Drag(diffX: Int, diffY: Int) extends UIRequest
 case class Zoom(rotation: Int, at: (Int, Int)) extends UIRequest
 
-class Controller(panel: ImagePanel) {
+class Controller(panel: ImagePanel, colorMap: ColorMap) {
 
   val numOfProcs = Runtime.getRuntime.availableProcessors
   val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
@@ -24,6 +27,12 @@ class Controller(panel: ImagePanel) {
 
   var requests = Queue.empty[UIRequest]
   var cleanNeeded = new AtomicBoolean(false)
+  val repaintTimer = new Timer(1000/10, new ActionListener {
+    override def actionPerformed(e: ActionEvent): Unit = {
+      logger.debug("repaint")
+      panel.repaint()
+    }
+  })
   var calculation = startNewCalculation(Area(Complex(-2, -2), 4.0 / (panel.image.getWidth - 1), panel.image.getWidth, panel.image.getHeight))
 
   panel.resized.subscribe { dimension =>
@@ -47,7 +56,7 @@ class Controller(panel: ImagePanel) {
   }
 
   def startNewCalculation(area: Area): Calculation =
-    new Calculation(area,  new BImagePlotter(panel.image, new Black_and_WhiteColorMap(2)))
+    new MandelCalc(area,  new BImagePlotter(panel.image, colorMap))
 
   def onRequest(req: UIRequest): Unit = {
     requests = requests.enqueue(req)
@@ -56,9 +65,13 @@ class Controller(panel: ImagePanel) {
   }
 
   def processRequests(): Unit = {
+    // TODO request processing should not block the Event Thread for long time
+    // A: aggregate subsequent requests with same type in one request
+    // B: process area and panel changes in an other thread with the possibility of interruption (maybe using a calculation trait or similar)
+    var debugTime = System.nanoTime
     var area = calculation.area
     logger.debug(s"processRequests $requests")
-    requests.foreach{
+    requests.foreach {
       case Resize(width, height) =>
         logger.debug(s"process resize for ($width, $height)")
         area = area.resize(width, height)
@@ -74,15 +87,25 @@ class Controller(panel: ImagePanel) {
         panel.zoomImage(factor, at)
         cleanNeeded.set(true)
     }
+    debugTime = (System.nanoTime - debugTime) / 1000000
+    if (debugTime > 200) {
+      println(s"process requests done in $debugTime ms. Queue: $requests")
+    }
     requests = Queue.empty
     panel.repaint()
     calculation = startNewCalculation(area)
   }
 
+  trait Calculation {
+    val area: Area
+    def running: Boolean
+    def stop(): Unit
+  }
+
   /**
    * It represents a calculation instance
    */
-  class Calculation(val area: Area, val plotter: Plotter) {
+  class MandelCalc(val area: Area, plotter: Plotter) extends Calculation {
 
     var running = true
     val calculator = new Calculator(area, plotter)
@@ -90,6 +113,8 @@ class Controller(panel: ImagePanel) {
     val startToSettle = new AtomicBoolean(false)
 
     debugTime = System.nanoTime
+
+    repaintTimer.start()
 
     val subscription: Subscription = calculator.calculate().subscribe(
       stat => stat match {
@@ -104,21 +129,41 @@ class Controller(panel: ImagePanel) {
           else if (maxIter > calculator.Config.iterationStep && settled > 0) {
             startToSettle.set(true)
           }
-          panel.repaint()
       },
       error => logger.error("Error happened", error),
       () => Swing.onEDT {
         logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
         running = false
+        repaintTimer.stop()
         if (!requests.isEmpty) processRequests()
-        else {
-          plotter.finish(area)
-          panel.repaint()
-        }
+        else calculation = new FinalizerCalc(area, plotter)
       }
     )
 
     def stop(): Unit = subscription.unsubscribe()
+  }
+
+  class FinalizerCalc(val area: Area, plotter: Plotter) extends Calculation {
+
+    import scala.concurrent._
+
+    @volatile var running = true
+    @volatile var cancel = false
+
+    val f: Future[Unit] = future {
+      plotter.finish(area, () => cancel)
+      if (!cancel) panel.repaint()
+    }
+
+    f.onComplete {
+      case Success(_) => Swing.onEDT {
+        running = false
+        if (!requests.isEmpty) processRequests()
+      }
+      case Failure(t) => logger.error("Finalizer failed", t)
+    }
+
+    override def stop(): Unit = cancel = true
   }
 
 }

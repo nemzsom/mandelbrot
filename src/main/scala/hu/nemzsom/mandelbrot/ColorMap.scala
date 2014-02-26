@@ -1,6 +1,7 @@
 package hu.nemzsom.mandelbrot
 
 import java.awt.Color
+import scala.collection.mutable.ArrayBuffer
 
 trait ColorMap {
   
@@ -27,7 +28,7 @@ abstract class ContinuousColorMap(colorMarks: List[ColorMark]) extends ColorMap 
   require(colorMarks.head.position == 0.0f, "the first colorMark should begin at position 0.0")
   require(
     colorMarks.sliding(2).forall { case List(cm1, cm2) =>
-      cm1.position < cm2.position
+      cm1.position <= cm2.position
     }, "colorMarks must be in ascending order"
   )
 
@@ -107,11 +108,16 @@ object ColorMap {
   }
 }
 
-class Black_and_WhiteColorMap(val nOfColors: Int) extends ContinuousColorMap(List(ColorMark(0, 0, 0, 0), ColorMark(0, 0, 1, 0.5f))) with IndexedColorMap {
+class Grayscale_ColorMap(val nOfColors: Int) extends ContinuousColorMap(List(ColorMark(0, 0, 0, 0), ColorMark(0, 0, 1, 0.5f))) with IndexedColorMap
+class Black_And_White_ColorMap extends Grayscale_ColorMap(2)
+class Blue_Yellow_ColorMap(val nOfColors: Int) extends ContinuousColorMap(List(ColorMark(236, 0.9f, 0.25f, 0),
+                                                                               ColorMark(236, 0.9f, 0.9f, 1f/5),
+                                                                               ColorMark(236, 0, 0.9f, 1f/5*2),
+                                                                               ColorMark(44, 0, 0.9f, 1f/5*2),
+                                                                               ColorMark(44, 0.9f, 0.9f, 1f/5*3),
+                                                                               ColorMark(44, 0.9f, 0.25f, 1f/5*4))) with IndexedColorMap
 
-}
-
-/*class HistogramColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends LinearColorMap(nOfColors, mapFunc) {
+trait HistogramColorMap extends IndexedColorMap {
 
   val histogram = new ArrayBuffer[Int] {
 
@@ -144,9 +150,7 @@ class Black_and_WhiteColorMap(val nOfColors: Int) extends ContinuousColorMap(Lis
       actCount
     }
     val total = histogram.sum
-    println(s"total: $total, size: ${histogram.size}")
-    println(histogram.mkString(","))
-    println(histArr.mkString(","))
+    val orig = this
     Option(new ColorMap {
       override def color(point: Point): Int = point.location match {
         case Outside(iter) =>
@@ -154,35 +158,28 @@ class Black_and_WhiteColorMap(val nOfColors: Int) extends ContinuousColorMap(Lis
           colorMap(count * (nOfColors-1) / total)
         case _ =>  0 // Inside or Unsettled
       }
+
+      override def map(k: Float): Int = orig.map(k)
     })
   }
-}*/
+}
 
-/*class SmoothColorMap(nOfColors: Int, mapFunc: Int => (Int => Int)) extends LinearColorMap(nOfColors, mapFunc) {
+trait SmoothColorMap extends ColorMap {
+
+  val nOfColors: Int
 
   override def finish: Option[ColorMap] = {
+    val orig = this
     Option(new ColorMap {
       override def color(point: Point): Int = point.location match {
         case Outside(iter) =>
           if (iter > point.iter) Calculator.iterate(point, iter)
-          val smoothIter = iter + 1 - Math.log(Math.log(!point.iterValue))/Math.log(2)
-          val color1 = colorMap(smoothIter.toInt % nOfColors)
-          val color2 = colorMap((smoothIter.toInt + 1) % nOfColors)
-          linearInterpolate(color1, color2, smoothIter % 1)
-        case _ =>  0 // Inside or Unsettled
+          val smoothIter = iter + 1 - Math.log(Math.log(!point.iterValue)) / Math.log(2)
+          map((smoothIter % nOfColors).toFloat / nOfColors)
+        case _ => 0 // Inside or Unsettled
       }
+
+      override def map(k: Float): Int = orig.map(k)
     })
   }
-
-  def linearInterpolate(c1: Int, c2: Int, pos: Double): Int = {
-    def getRGB(rgb: Int): (Int, Int, Int) =
-      ((0x00FF0000 & rgb) >> 16, (0x0000FF00 & rgb) >> 8, 0x000000FF & rgb)
-    def interpolate(a: Int, b: Int): Int = (a + (b - a) * pos).toInt
-    val (r1, g1, b1) = getRGB(c1)
-    val (r2, g2, b2) = getRGB(c2)
-    val r = interpolate(r1, r2)
-    val g = interpolate(g1, g2)
-    val b = interpolate(b1, b2)
-    r << 16 | g << 8 | b
-  }
-}*/
+}

@@ -13,10 +13,11 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   val width = 300
   val height = 300
+  val colorMap = new Blue_Yellow_ColorMap(60) with SmoothColorMap
 
   val panel = new ImagePanel(width, height)
 
-  val controller = new Controller(panel)
+  val controller = new Controller(panel, colorMap)
 
   // DEBUG
   panel.reactions += {

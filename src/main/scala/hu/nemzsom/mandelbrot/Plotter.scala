@@ -3,12 +3,13 @@ package hu.nemzsom.mandelbrot
 import java.awt.image.{DataBufferInt, BufferedImage}
 import com.typesafe.scalalogging.slf4j.Logger
 import org.slf4j.LoggerFactory
+import scala.annotation.tailrec
 
 trait Plotter {
 
   def plot(p: Point): Unit
 
-  def finish(points: Traversable[Point]): Unit
+  def finish(points: Traversable[Point], cancel: () => Boolean): Unit
 
 }
 
@@ -24,15 +25,17 @@ class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
 
   def plot(p: Point): Unit = pixels(p.index) = colorMap.color(p)
 
-  def finish(points: Traversable[Point]): Unit = colorMap.finish match {
+  def finish(points: Traversable[Point], cancel: () => Boolean): Unit = colorMap.finish match {
     case Some(map) =>
-      // DEBUG
-      val time = System.nanoTime
-      // DEBUG END
-      points foreach { p =>
-        pixels(p.index) = map.color(p)
+      @tailrec def colorAll(ps: Traversable[Point]): Unit = {
+        if (!ps.isEmpty && !cancel()) {
+          val p = ps.head
+          pixels(p.index) = map.color(p)
+          colorAll(ps.tail)
+        }
+
       }
-      logger.info(s"AFTER_COLOR done in ${(System.nanoTime - time) / 1000000} ms")
+      colorAll(points)
     case None =>
   }
 }

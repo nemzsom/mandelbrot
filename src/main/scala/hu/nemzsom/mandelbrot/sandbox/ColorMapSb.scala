@@ -3,17 +3,16 @@ package hu.nemzsom.mandelbrot.sandbox
 import scala.swing.Swing._
 import scala.swing.{MainFrame, Panel, SimpleSwingApplication}
 import java.awt.image.BufferedImage
-import java.awt.{Color, Graphics2D}
-import scala.swing.event.{MouseWheelMoved, MousePressed}
-import java.awt.event.InputEvent
-import hu.nemzsom.mandelbrot.{Outside, Complex, Point, Black_and_WhiteColorMap}
+import java.awt.Graphics2D
+import hu.nemzsom.mandelbrot._
+import hu.nemzsom.mandelbrot.Outside
 
 object ColorMapSb extends SimpleSwingApplication {
 
   val width = 900
   val height = 50
-  val colorCount = 13
-  val colorMap = new Black_and_WhiteColorMap(colorCount)
+  val colorCount = 20
+  val colorMap = new Blue_Yellow_ColorMap(colorCount)
 
   lazy val ui = new Panel {
 
