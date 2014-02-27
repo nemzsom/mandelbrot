@@ -96,6 +96,12 @@ object ColorMap {
   class Brown(nOfColors: Int) extends CustomCMap(nOfColors, List(ColorMark(0, 1f, 0.07f, 0),
                                                                  ColorMark(53, 0.5f, 1f, 0.3f)))
 
+  class Keki(nOfColors: Int) extends CustomCMap(nOfColors, List(ColorMark(63, 0.89f, 0.40f, 0),
+                                                                ColorMark(45, 0.8f, 0.97f, 0.5f)))
+
+  class Keki2(nOfColors: Int) extends CustomCMap(nOfColors, List(ColorMark(63, 0.89f, 0.40f, 0),
+                                                                 ColorMark(45, 0.8f, 0.97f, 1/3f),
+                                                                 ColorMark(294, 0.55f, 0.61f, 2/3f)))
 }
 
 trait HistogramColorMap extends IndexedColorMap {
