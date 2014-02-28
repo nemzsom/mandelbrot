@@ -13,7 +13,7 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   val width = 640
   val height = 480
-  val colorMap = new ColorMap.Brown(60) with SmoothColorMap
+  val colorMap = new ColorMap.Brown(80) with SmoothColorMap
 
   val panel = new ImagePanel(width, height)
 

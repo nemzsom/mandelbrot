@@ -2,8 +2,6 @@ package hu.nemzsom.mandelbrot
 
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import scala.concurrent._
-import scala.concurrent.duration.Duration
-import rx.lang.scala.Subscription
 
 object Sandbox extends App {
 
@@ -12,28 +10,12 @@ object Sandbox extends App {
 
   val width = 640
   val height = 480
-  val area = Area(Complex(-2, -2), 4.0 / (width - 1), width, height)
+  val area = Area(Complex(-2, -1.65), 2.5 / (width - 1), width, height)
 
-  val calculator = new Calculator(area, Mock.Plotter)
+  val perfTester = new CalculatorPerf
 
-  val p = promise[Unit]()
-  val done = p.future
-
-  var time = System.nanoTime
-  val subscription: Subscription = calculator.calculate().subscribe (
-    stat => stat match {
-      case CalcStat(_, _, maxIter) => if (maxIter > 1000) subscription.unsubscribe()
-    },
-    error => println(error),
-    () => {
-      println("done")
-      time = System.nanoTime - time
-      p.success()
-    }
-  )
-
-  Await.result(done, Duration.Inf)
-  println(s"Calc done in ${time / 1000000} ms.")
+  perfTester.measure(CalcSpec(640, 480, Complex(-2, -2), 4, 100))
+  executor.shutdown()
 
 }
 

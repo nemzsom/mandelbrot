@@ -33,7 +33,7 @@ class Controller(panel: ImagePanel, colorMap: ColorMap) {
       panel.repaint()
     }
   })
-  var calculation = startNewCalculation(Area(Complex(-2, -2), 4.0 / (panel.image.getWidth - 1), panel.image.getWidth, panel.image.getHeight))
+  var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
 
   panel.resized.subscribe { dimension =>
     logger.debug(s"panel resized to $dimension")
