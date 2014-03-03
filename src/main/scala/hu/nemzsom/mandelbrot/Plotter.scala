@@ -15,8 +15,6 @@ trait Plotter {
 
 class BImagePlotter(img: BufferedImage, colorMap: ColorMap) extends Plotter {
 
-  protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.BImagePlotter")
-
   val pixels = {
     val raster = img.getRaster
     val databuffer: DataBufferInt = raster.getDataBuffer.asInstanceOf[DataBufferInt]

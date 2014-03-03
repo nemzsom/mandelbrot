@@ -117,15 +117,15 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     Area(topLeftComplex, newScale, width, height)
   }
 
-  def widthAtComplexPane: Double =
+  def mathematicalWidth: Double =
     pointAt(width - 1, 0).complexValue.im - topLeft.complexValue.im
 
-  def heightAtComplexPane: Double =
+  def mathematicalHeight: Double =
     pointAt(0, height - 1).complexValue.re - topLeft.complexValue.re
 
   override def size: Int = width * height
 
-  override def toString(): String = s"Area($topLeft, width: $width, height: $height)"
+  override def toString(): String = s"Area($topLeft, width: $width, height: $height, mathWidth: $mathematicalWidth, mathHeight: $mathematicalHeight)"
 }
 
 object Area {

@@ -20,7 +20,7 @@ case class Zoom(rotation: Int, at: (Int, Int)) extends UIRequest
 class Controller(panel: ImagePanel, colorMap: ColorMap) {
 
   val numOfProcs = Runtime.getRuntime.availableProcessors
-  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs * 2).asInstanceOf[ThreadPoolExecutor]
+  val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs).asInstanceOf[ThreadPoolExecutor]
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.Controller")
@@ -33,7 +33,8 @@ class Controller(panel: ImagePanel, colorMap: ColorMap) {
       panel.repaint()
     }
   })
-  var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
+  //var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
+  var calculation = startNewCalculation(Area(Complex(-1.4048486487084642, -3.546832668775599E-10), 5.092590793509544E-10 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
 
   panel.resized.subscribe { dimension =>
     logger.debug(s"panel resized to $dimension")
@@ -135,13 +136,13 @@ class Controller(panel: ImagePanel, colorMap: ColorMap) {
         logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
         running = false
         repaintTimer.stop()
-        if (!requests.isEmpty) processRequests()
-        else calculation = new FinalizerCalc(area, plotter)
-      }
-    )
+  if (!requests.isEmpty) processRequests()
+  else calculation = new FinalizerCalc(area, plotter)
+}
+)
 
-    def stop(): Unit = subscription.unsubscribe()
-  }
+def stop(): Unit = subscription.unsubscribe()
+}
 
   class FinalizerCalc(val area: Area, plotter: Plotter) extends Calculation {
 

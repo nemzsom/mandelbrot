@@ -12,7 +12,6 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="mandelbrot.Calculator" level="info"/>
-    <logger name="mandelbrot.Controller" level="info"/>
-    <logger name="mandelbrot.BImagePlotter" level="debug"/>
+    <!--<logger name="mandelbrot.Calculator" level="debug"/>-->
+    <logger name="mandelbrot.Controller" level="debug"/>
 </configuration>

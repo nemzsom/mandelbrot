@@ -2,14 +2,15 @@ package hu.nemzsom.mandelbrot
 
 import scala.swing.Swing._
 import scala.swing.Panel
-import scala.swing.event.UIElementResized
-import scala.swing.event.MousePressed
-import scala.swing.event.MouseWheelMoved
-import scala.swing.event.MouseDragged
+import scala.swing.event._
 import java.awt.{Dimension, Graphics2D}
 import java.awt.image.BufferedImage
 import rx.lang.scala.{Subscription, Observer, Observable}
 import scala.swing.Reactions.Reaction
+import scala.swing.event.MousePressed
+import scala.swing.event.UIElementResized
+import scala.swing.event.MouseWheelMoved
+import scala.swing.event.MouseDragged
 
 class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
 
@@ -49,6 +50,12 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
           observer.onNext(diffX, diffY)
       }
     )
+  }
+
+  val keyPressed: Observable[KeyPressed] = reactionToObservable{
+    (observer: Observer[KeyPressed]) => {
+      case kp: KeyPressed => observer.onNext(kp)
+    }
   }
 
   def reactionToObservable[T](r: Observer[T] => Reaction): Observable[T] = Observable.create(

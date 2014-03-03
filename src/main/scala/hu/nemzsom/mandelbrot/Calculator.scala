@@ -121,7 +121,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
 
   def divideInitially: List[Area] = {
     def split(area: Area, need: Int): List[Area] =
-      if ((need <= 0 && (area.widthAtComplexPane < 4 || area.heightAtComplexPane < 4)) ||
+      if ((need <= 0 && (area.mathematicalWidth < 4 || area.mathematicalHeight < 4)) ||
         area.width < 4 || area.height < 4) List(area)
       else {
         val (a1, a2) =
