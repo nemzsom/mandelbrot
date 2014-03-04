@@ -13,17 +13,28 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   val width = 640
   val height = 480
-  val colorMap = new ColorMap.Brown(80) with SmoothColorMap
+  val colorMaps: Array[Int => ColorMap] = Array(
+    new ColorMap.Sunset(_) with SmoothColorMap,
+    new ColorMap.Brown(_) with SmoothColorMap,
+    new ColorMap.Grayscale(_) with SmoothColorMap,
+    new ColorMap.BlueYellow(_) with SmoothColorMap,
+    new ColorMap.Keki(_) with SmoothColorMap,
+    new ColorMap.Keki2(_) with SmoothColorMap
+  )
 
   val panel = new ImagePanel(width, height)
 
-  val controller = new Controller(panel, colorMap)
+  val controller = new Controller(panel, colorMaps)
 
   // DEBUG
   panel.reactions += {
     case e: MousePressed => println(s"clicked: ${e.point}")
     case KeyPressed(_, Key.Space, _, _) => debugQuene.put(0)
-    case KeyPressed(_, Key.I, _, _) => println(controller.calculation.area)
+    case KeyPressed(_, Key.I, _, _) =>
+      println("--------------- INFO -----------------")
+      println(controller.calculation.area)
+      println(s"colorIndex: ${controller.colorIndex}, colorCount: ${controller.colorCount}")
+      println("--------------------------------------")
   }
   // DEBUG END
 

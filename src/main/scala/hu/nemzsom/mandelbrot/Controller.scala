@@ -9,15 +9,21 @@ import scala.swing.Swing
 import scala.collection.immutable.Queue
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.Timer
-import java.awt.event.{ActionEvent, ActionListener}
+import java.awt.event.{InputEvent, ActionEvent, ActionListener}
 import scala.util.{Success, Failure}
+import scala.swing.event.{Key, KeyPressed}
 
 sealed trait UIRequest
+
 case class Resize(width: Int, height: Int) extends UIRequest
+
 case class Drag(diffX: Int, diffY: Int) extends UIRequest
+
 case class Zoom(rotation: Int, at: (Int, Int)) extends UIRequest
 
-class Controller(panel: ImagePanel, colorMap: ColorMap) {
+case class ChangeColor(indexDiff: Int, colorCountDiff: Int) extends UIRequest
+
+class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
 
   val numOfProcs = Runtime.getRuntime.availableProcessors
   val executor: ThreadPoolExecutor = Executors.newFixedThreadPool(numOfProcs).asInstanceOf[ThreadPoolExecutor]
@@ -25,39 +31,57 @@ class Controller(panel: ImagePanel, colorMap: ColorMap) {
 
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.Controller")
 
+  var colorIndex = 0
+  var colorCount = 80
+  var colorMap = colorMaps(colorIndex)(colorCount)
   var requests = Queue.empty[UIRequest]
   var cleanNeeded = new AtomicBoolean(false)
-  val repaintTimer = new Timer(1000/10, new ActionListener {
+  val repaintTimer = new Timer(1000 / 10, new ActionListener {
     override def actionPerformed(e: ActionEvent): Unit = {
       logger.debug("repaint")
       panel.repaint()
     }
   })
-  //var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
-  var calculation = startNewCalculation(Area(Complex(-1.4048486487084642, -3.546832668775599E-10), 5.092590793509544E-10 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
+  var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
 
-  panel.resized.subscribe { dimension =>
-    logger.debug(s"panel resized to $dimension")
-    val resizes = requests.filter(_.isInstanceOf[Resize]).asInstanceOf[Queue[Resize]]
-    val (currWidth, currHeight) =
-      if (resizes.isEmpty) (calculation.area.width, calculation.area.height)
-      else (resizes.last.width, resizes.last.height)
-    if (currWidth != dimension.width || currHeight != dimension.height) {
-      onRequest(Resize(dimension.width, dimension.height))
-    }
+  panel.resized.subscribe {
+    dimension =>
+      logger.debug(s"panel resized to $dimension")
+      val resizes = requests.filter(_.isInstanceOf[Resize]).asInstanceOf[Queue[Resize]]
+      val (currWidth, currHeight) =
+        if (resizes.isEmpty) (calculation.area.width, calculation.area.height)
+        else (resizes.last.width, resizes.last.height)
+      if (currWidth != dimension.width || currHeight != dimension.height) {
+        onRequest(Resize(dimension.width, dimension.height))
+      }
   }
 
-  panel.mouseDragged.subscribe( xy => xy match {
+  panel.mouseDragged.subscribe(xy => xy match {
     case (x, y) => onRequest(Drag(x, y))
   })
 
-  panel.mouseWheelMoved.subscribe { e =>
-    val point = e.point
-    onRequest(Zoom(e.rotation, (point.x, point.y)))
+  panel.mouseWheelMoved.subscribe {
+    e =>
+      val point = e.point
+      onRequest(Zoom(e.rotation, (point.x, point.y)))
   }
 
+  panel.keyPressed.subscribe(e => e match {
+    case KeyPressed(_, Key.C, modifiers, _) =>
+      if ((modifiers & InputEvent.CTRL_DOWN_MASK) != 0) {
+        onRequest(ChangeColor(0, 10))
+      }
+      else if ((modifiers & InputEvent.SHIFT_DOWN_MASK) != 0) {
+        onRequest(ChangeColor(0, -10))
+      }
+      else {
+        onRequest(ChangeColor(1, 0))
+      }
+    case _ =>
+  })
+
   def startNewCalculation(area: Area): Calculation =
-    new MandelCalc(area,  new BImagePlotter(panel.image, colorMap))
+    new MandelCalc(area, new BImagePlotter(panel.image, colorMap))
 
   def onRequest(req: UIRequest): Unit = {
     requests = requests.enqueue(req)
@@ -87,6 +111,18 @@ class Controller(panel: ImagePanel, colorMap: ColorMap) {
         area = area.zoom(factor, at)
         panel.zoomImage(factor, at)
         cleanNeeded.set(true)
+      case ChangeColor(indexDiff, colorCountDiff) =>
+        logger.debug(s"process changeColor for indexDiff $indexDiff and colorCountDiff $colorCountDiff")
+        colorIndex = {
+          val newIndex = colorIndex + indexDiff
+          if (newIndex >= colorMaps.size) 0
+          else newIndex
+        }
+        colorCount = {
+          val newColorCount = colorCount + colorCountDiff
+          Math.max(2, newColorCount)
+        }
+        colorMap = colorMaps(colorIndex)(colorCount)
     }
     debugTime = (System.nanoTime - debugTime) / 1000000
     if (debugTime > 200) {
@@ -99,7 +135,9 @@ class Controller(panel: ImagePanel, colorMap: ColorMap) {
 
   trait Calculation {
     val area: Area
+
     def running: Boolean
+
     def stop(): Unit
   }
 
@@ -136,13 +174,13 @@ class Controller(panel: ImagePanel, colorMap: ColorMap) {
         logger.info(s"CALC_DONE ${(System.nanoTime - debugTime) / 1000000} ms")
         running = false
         repaintTimer.stop()
-  if (!requests.isEmpty) processRequests()
-  else calculation = new FinalizerCalc(area, plotter)
-}
-)
+        if (!requests.isEmpty) processRequests()
+        else calculation = new FinalizerCalc(area, plotter)
+      }
+    )
 
-def stop(): Unit = subscription.unsubscribe()
-}
+    def stop(): Unit = subscription.unsubscribe()
+  }
 
   class FinalizerCalc(val area: Area, plotter: Plotter) extends Calculation {
 
