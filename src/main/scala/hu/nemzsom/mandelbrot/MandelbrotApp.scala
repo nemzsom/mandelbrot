@@ -11,8 +11,8 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   protected val logger: Logger = Logger(LoggerFactory getLogger "mandelbrot.App")
 
-  val width = 1980
-  val height = 1058
+  val width = 640
+  val height = 480
   val colorMaps: Array[Int => ColorMap] = Array(
     new ColorMap.Sunset(_) with SmoothColorMap,
     new ColorMap.Brown(_) with SmoothColorMap,
