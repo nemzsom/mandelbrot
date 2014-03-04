@@ -1,6 +1,7 @@
 package hu.nemzsom.mandelbrot
 
 import scala.compat.Platform.currentTime
+import scala.compat.Platform
 
 /** Common trait for specify a performance test */
 trait PerformanceTestSpec {

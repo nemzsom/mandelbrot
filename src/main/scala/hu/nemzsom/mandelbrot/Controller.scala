@@ -42,7 +42,8 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
       panel.repaint()
     }
   })
-  var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
+  //var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
+  var calculation = startNewCalculation(Area(Complex(-0.2281555005217314, -1.115142415586574), 5.69794211813246E-13 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
 
   panel.resized.subscribe {
     dimension =>
