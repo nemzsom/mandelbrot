@@ -330,9 +330,9 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
         * from http://en.wikipedia.org/wiki/Mandelbrot_set#Cardioid_.2F_bulb_checking
         */
       private def preCheck_isInside(c: Complex): Boolean = {
-        val q = pow(c.re - 0.25, 2) + pow(c.im, 2)
-        q * (q + (c.re - 0.25)) < pow(c.im, 2) / 4 ||
-          pow(c.re + 1, 2) + pow(c.im, 2) < 0.0625
+        val q = (c.re - 0.25).pow(2) + c.im.pow(2)
+        q * (q + (c.re - 0.25)) < c.im.pow(2) / 4 ||
+          (c.re + 1).pow(2) + c.im.pow(2) < 0.0625
       }
     }
 

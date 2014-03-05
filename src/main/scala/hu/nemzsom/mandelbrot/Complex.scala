@@ -4,7 +4,7 @@ import scala.math._
 
 /** from http://www.stoyanr.com/2013/02/complex-numbers-in-scala.html 
  */
-case class Complex(re: Double, im: Double) extends Ordered[Complex] {
+case class Complex(re: BigDecimal, im: BigDecimal) extends Ordered[Complex] {
 
   // Constructors
   def this(re: Double) = this(re, 0)
@@ -13,7 +13,7 @@ case class Complex(re: Double, im: Double) extends Ordered[Complex] {
   def unary_+ = this
   def unary_- = new Complex(-re, -im)
   def unary_~ = new Complex(re, -im) // conjugate
-  def unary_! = sqrt(pow(re, 2) + pow(im, 2)) // modulo
+  def unary_! = (re.pow(2) + im.pow(2)).sqrt // modulo
 
   // Comparison
   def compare(that: Complex) = !this compare !that
@@ -24,8 +24,8 @@ case class Complex(re: Double, im: Double) extends Ordered[Complex] {
   def *(c: Complex) =
     new Complex(re * c.re - im * c.im, im * c.re + re * c.im)
   def /(c: Complex) = {
-    require(c.re != 0 || c.im != 0)
-    val d = pow(c.re, 2) + pow(c.im, 2)
+    require(c.re != BigDecimal.ZERO || c.im != BigDecimal.ZERO)
+    val d = c.re.pow(2) + c.im.pow(2)
     new Complex((re * c.re + im * c.im) / d, (im * c.re - re * c.im) / d)
   }
 
@@ -33,12 +33,33 @@ case class Complex(re: Double, im: Double) extends Ordered[Complex] {
   override def toString: String =
     this match {
       case Complex.i => "i"
-      case Complex(real, 0) => real.toString
-      case Complex(0, imag) => imag.toString + "*i"
+      case Complex(real, BigDecimal.ZERO) => real.toString()
+      case Complex(BigDecimal.ZERO, imag) => imag.toString() + "*i"
       case _ => asString
     }
-  private def asString =
-    re + (if (im < 0) "-" + -im else "+" + im) + "*i"
+  private def asString: String =
+    re.toString + (if (im < 0) "-" + -im else "+" + im) + "*i"
+
+  implicit class BigDecimalOps(val bd: BigDecimal) {
+
+    import BigDecimal._
+
+    // TODO Handle oscillations
+    def sqrt: BigDecimal = {
+      var guess = bd / TWO
+      var done = false
+      val maxIterations = bd.mc.getPrecision + 1
+      var i = 0
+      var result: BigDecimal = null
+      while (!done && i < maxIterations) {
+        result = (bd / guess + guess) / TWO
+        done = result == guess
+        guess = result
+        i += 1
+      }
+      guess
+    }
+  }
 }
 
 object Complex {
@@ -55,4 +76,9 @@ object Complex {
   implicit def fromLong(l: Long) = new Complex(l)
   implicit def fromInt(i: Int) = new Complex(i)
   implicit def fromShort(s: Short) = new Complex(s)
+}
+
+object BigDecimal {
+  val ZERO = new java.math.BigDecimal(0)
+  val TWO = new java.math.BigDecimal(2)
 }

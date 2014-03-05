@@ -117,10 +117,10 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
     Area(topLeftComplex, newScale, width, height)
   }
 
-  def mathematicalWidth: Double =
+  def mathematicalWidth: BigDecimal =
     pointAt(width - 1, 0).complexValue.im - topLeft.complexValue.im
 
-  def mathematicalHeight: Double =
+  def mathematicalHeight: BigDecimal =
     pointAt(0, height - 1).complexValue.re - topLeft.complexValue.re
 
   override def size: Int = width * height
