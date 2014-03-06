@@ -1,13 +1,14 @@
 package hu.nemzsom.mandelbrot
 
 import scala.math._
+import java.math.MathContext
 
 /** from http://www.stoyanr.com/2013/02/complex-numbers-in-scala.html 
  */
 case class Complex(re: BigDecimal, im: BigDecimal) extends Ordered[Complex] {
 
   // Constructors
-  def this(re: Double) = this(re, 0)
+  def this(re: BigDecimal) = this(re, 0)
 
   // Unary operators
   def unary_+ = this
@@ -24,7 +25,7 @@ case class Complex(re: BigDecimal, im: BigDecimal) extends Ordered[Complex] {
   def *(c: Complex) =
     new Complex(re * c.re - im * c.im, im * c.re + re * c.im)
   def /(c: Complex) = {
-    require(c.re != BigDecimal.ZERO || c.im != BigDecimal.ZERO)
+    require(c.re != BigDecValues.ZERO || c.im != BigDecValues.ZERO)
     val d = c.re.pow(2) + c.im.pow(2)
     new Complex((re * c.re + im * c.im) / d, (im * c.re - re * c.im) / d)
   }
@@ -33,8 +34,8 @@ case class Complex(re: BigDecimal, im: BigDecimal) extends Ordered[Complex] {
   override def toString: String =
     this match {
       case Complex.i => "i"
-      case Complex(real, BigDecimal.ZERO) => real.toString()
-      case Complex(BigDecimal.ZERO, imag) => imag.toString() + "*i"
+      case Complex(real, BigDecValues.ZERO) => real.toString()
+      case Complex(BigDecValues.ZERO, imag) => imag.toString() + "*i"
       case _ => asString
     }
   private def asString: String =
@@ -42,7 +43,7 @@ case class Complex(re: BigDecimal, im: BigDecimal) extends Ordered[Complex] {
 
   implicit class BigDecimalOps(val bd: BigDecimal) {
 
-    import BigDecimal._
+    import BigDecValues._
 
     // TODO Handle oscillations
     def sqrt: BigDecimal = {
@@ -65,7 +66,7 @@ case class Complex(re: BigDecimal, im: BigDecimal) extends Ordered[Complex] {
 object Complex {
   // Constants
   val i = new Complex(0, 1)
-  val ZERO = new Complex(0, 0)
+  val ZERO = new Complex(BigDecimal(0, new MathContext(50)), BigDecimal(0, new MathContext(50)))
 
   // Factory methods
   def apply(re: Double) = new Complex(re)
@@ -78,7 +79,7 @@ object Complex {
   implicit def fromShort(s: Short) = new Complex(s)
 }
 
-object BigDecimal {
-  val ZERO = new java.math.BigDecimal(0)
-  val TWO = new java.math.BigDecimal(2)
+object BigDecValues {
+  val ZERO = BigDecimal(0)
+  val TWO = BigDecimal(2)
 }

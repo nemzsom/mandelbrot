@@ -12,6 +12,7 @@ import javax.swing.Timer
 import java.awt.event.{InputEvent, ActionEvent, ActionListener}
 import scala.util.{Success, Failure}
 import scala.swing.event.{Key, KeyPressed}
+import java.math.MathContext
 
 sealed trait UIRequest
 
@@ -43,7 +44,12 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
     }
   })
 
-  var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
+  //var calculation = startNewCalculation(Area(Complex(-2, -1.65), 2.5 / (panel.image.getHeight - 1), panel.image.getWidth, panel.image.getHeight))
+  val mc = new MathContext(3)
+  val minus2 = BigDecimal(-2, mc)
+  val minus1_65 = BigDecimal(-1.65, mc)
+  val scale = BigDecimal(2.5, mc) / (panel.image.getHeight - 1)
+  var calculation = startNewCalculation(Area(Complex(minus2, minus1_65), scale, panel.image.getWidth, panel.image.getHeight))
 
 
   panel.resized.subscribe {

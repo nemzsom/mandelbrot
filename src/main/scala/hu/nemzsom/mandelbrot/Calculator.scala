@@ -377,9 +377,11 @@ object Calculator {
       loop(point.iter + 1, z * z + c)
     }
 
+  val BAILOUT = BigDecValues.TWO * BigDecValues.TWO
+
   implicit class ComplexOps(c: Complex) {
 
-    def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
+    def escaped: Boolean = c.re * c.re + c.im * c.im > BAILOUT
   }
 
 }

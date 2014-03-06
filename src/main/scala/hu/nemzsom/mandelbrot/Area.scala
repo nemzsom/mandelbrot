@@ -20,7 +20,7 @@ class Point(val complexValue: Complex, var index: Int) {
   }
 }
 
-class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) extends Traversable[Point] {
+class Area(val scale: BigDecimal, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) extends Traversable[Point] {
 
   lazy val topLeft: Point = data(startAt)
 
@@ -130,11 +130,11 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
 object Area {
 
-  def onePoint(complexValue: Complex, scale: Double): Area = {
+  def onePoint(complexValue: Complex, scale: BigDecimal): Area = {
     new Area(scale, Array(new Point(complexValue, 0)), 1, 0, 1, 1)
   }
 
-  def apply(topLeftComp: Complex, scale: Double, width: Int, height: Int): Area =
+  def apply(topLeftComp: Complex, scale: BigDecimal, width: Int, height: Int): Area =
     onePoint(topLeftComp, scale).resize(width, height)
 }
 
