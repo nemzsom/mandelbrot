@@ -22,7 +22,7 @@ object ColorMapSb extends SimpleSwingApplication {
       super.paintComponent(g)
       val sampleWidth = width / 2
       drawImage { x =>
-        val p = new Point(Complex.ZERO, 0)
+        val p = new Point(Complex(0), 0)
         p.location = Outside(x * colorCount / sampleWidth)
         colorMap.color(p)
       }(0, g)

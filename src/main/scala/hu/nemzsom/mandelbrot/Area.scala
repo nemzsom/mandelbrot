@@ -12,7 +12,7 @@ case class Outside(iter: Int) extends PointLoc
 class Point(val complexValue: Complex, var index: Int) {
 
   var iter = 0
-  var iterValue = Complex.ZERO
+  var iterValue = Complex(0)
   var location: PointLoc = Unsettled
 
   override def toString: String = {
@@ -69,6 +69,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
   def resize(newWidth: Int, newHeight: Int): Area = {
     val newSize = newWidth * newHeight
     val newData = new Array[Point](newSize)
+    val tlC = topLeft.complexValue
     var i = 0
     for {
       y <- 0 until newHeight
@@ -80,7 +81,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
           p.index = i // sets the new index
           p
         }
-        else new Point(topLeft.complexValue + Complex(y * scale, x * scale), i)
+        else new Point(Complex(y * scale + tlC.re, x * scale + tlC.im), i)
       }
       i += 1
     }
@@ -89,6 +90,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
   def move(diffX: Int, diffY: Int): Area = {
     val newData = new Array[Point](size)
+    val tlC = topLeft.complexValue
     var i = 0
     for {
       y <- 0 until height
@@ -102,7 +104,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
           p.index = i // sets the new index
           p
         }
-        else new Point(topLeft.complexValue + Complex(oldY * scale, oldX * scale), i)
+        else new Point(Complex(oldY * scale + tlC.re, oldX * scale + tlC.im), i)
       }
       i += 1
     }

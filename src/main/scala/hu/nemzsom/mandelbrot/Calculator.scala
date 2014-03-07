@@ -361,21 +361,22 @@ object Calculator {
    * Performs the mandelbrot iteration on one point to the specified maxIteration. It expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
    * @param point to update
    */
-  def iterate(point: Point, maxIter: Int): Unit =
-    if (point.iter < maxIter) {
-      val c = point.complexValue
-      @tailrec def loop(iter: Int, z: Complex): Unit = {
-        val escaped = z.escaped
-        if (iter == maxIter || escaped) {
-          point.iter = iter
-          point.iterValue = z
-          if (escaped) point.location = Outside(iter)
-        }
-        else loop(iter + 1, z * z + c)
+  def iterate(point: Point, maxIter: Int): Unit = {
+    val z = point.iterValue
+    val c = point.complexValue
+    @tailrec def loop(iter: Int): Unit = {
+      z * z + c
+      val escaped = z.escaped
+      if (iter == maxIter || escaped) {
+        point.iter = iter
+        if (escaped) point.location = Outside(iter)
       }
-      val z = point.iterValue
-      loop(point.iter + 1, z * z + c)
+      else loop(iter + 1)
     }
+    if (point.iter < maxIter) loop(point.iter + 1)
+  }
+
+
 
   implicit class ComplexOps(c: Complex) {
 

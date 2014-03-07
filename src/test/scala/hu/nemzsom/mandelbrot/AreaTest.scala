@@ -18,7 +18,7 @@ class AreaTest extends FunSuite {
    */
   trait TestArea {
     val scale = 1.0
-    val area: Area = Area(Complex.ZERO, scale, 3, 3)
+    val area: Area = Area(Complex(0), scale, 3, 3)
     val data = area.data
   }
 
