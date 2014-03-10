@@ -17,13 +17,13 @@ class AreaTest extends FunSuite {
    *  2 |(2,0) | (2,1) | (2,2)
    */
   trait TestArea {
-    val scale = 1.0
+    val scale = new ScaleAsDouble(1.0)
     val area: Area = Area(Complex(0), scale, 3, 3)
-    val data = area.data
+    val data: Array[Point] = area.data
   }
 
   test("apply with scale") {
-    val scale = 1.0
+    val scale =new ScaleAsDouble(1.0)
     val area = Area(Complex(1, 10), scale, 3, 2)
     area.data.zipWithIndex.forall{ case (point, index) =>
       point.index == index
@@ -52,7 +52,7 @@ class AreaTest extends FunSuite {
   }
 
   test("width and height at complex pane") {
-    val area = Area(Complex(-2, -2), 2.0 / 50, 51, 101)
+    val area = Area(Complex(-2, -2), Scale(2.0 / 50), 51, 101)
     Assert.assertEquals(2.0, area.mathematicalWidth, 0.001)
     Assert.assertEquals(4.0, area.mathematicalHeight, 0.001)
   }
@@ -61,7 +61,8 @@ class AreaTest extends FunSuite {
     new TestArea {
       area foreach  { point =>
         point.iter = point.index
-        point.iterValue =  point.complexValue * 2
+        point.iterValue = point.complexValue.copy
+        point.iterValue.times(Complex(2))
         point.iter match {
           case multiplyOf10 if multiplyOf10 % 10 == 0 => point.location = Unsettled
           case even if even % 2 == 0 => point.location = Inside
@@ -70,7 +71,7 @@ class AreaTest extends FunSuite {
       }
       assert(data.forall { point =>
         point.iter == point.index &&
-        point.iterValue == point.complexValue * 2 &&
+        point.iterValue == { val c = point.complexValue.copy; c.times(Complex(2)); c } &&
         (point.location match {
           case Unsettled => point.iter % 10 == 0
           case Inside => point.iter % 2 == 0
@@ -110,7 +111,7 @@ class AreaTest extends FunSuite {
   }
 
   test("split vertical with even width") {
-    val area: Area = Area(Complex(0, 0), 1, 2, 1)
+    val area: Area = Area(Complex(0, 0), Scale(1), 2, 1)
     val (left, right) = area.splitVertical
     assert(Seq(left, right).forall(a => a.width == 1 && a.height == 1))
     assert(left.topLeft.index === 0)
@@ -118,7 +119,7 @@ class AreaTest extends FunSuite {
   }
 
   test("split vertical with odd width") {
-    val area: Area = Area(Complex(0, 0), 1, 3, 1)
+    val area: Area = Area(Complex(0, 0),Scale(1), 3, 1)
     val (left, right) = area.splitVertical
     assert(Seq(left, right).forall(a => a.height == 1))
     assert(Seq(left, right).map(_.width) === Seq(1, 2))
@@ -127,7 +128,7 @@ class AreaTest extends FunSuite {
   }
 
   test("split horizontal with even width") {
-    val area: Area = Area(Complex(0, 0), 1, 1, 2)
+    val area: Area = Area(Complex(0, 0), Scale(1), 1, 2)
     val (top, bottom) = area.splitHorizontal
     assert(Seq(top, bottom).forall(a => a.width == 1 && a.height == 1))
     assert(top.topLeft.index === 0)
@@ -135,7 +136,7 @@ class AreaTest extends FunSuite {
   }
 
   test("split horizontal with odd width") {
-    val area: Area = Area(Complex(0, 0), 1, 1, 3)
+    val area: Area = Area(Complex(0, 0), Scale(1), 1, 3)
     val (top, bottom) = area.splitHorizontal
     assert(Seq(top, bottom).forall(a => a.width == 1))
     assert(Seq(top, bottom).map(_.height) === Seq(1, 2))

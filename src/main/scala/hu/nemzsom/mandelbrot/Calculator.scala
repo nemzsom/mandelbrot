@@ -1,8 +1,6 @@
 package hu.nemzsom.mandelbrot
 
-import scala.annotation.tailrec
 import scala.concurrent._
-import scala.math._
 import rx.lang.scala.{Subscription, Observer, Observable}
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.scalalogging.slf4j.Logger
@@ -307,7 +305,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
        * @return true if the point counts as updated in the current calculation
        */
       protected def updatePoint(point: Point): Boolean = {
-        Calculator.iterate(point, maxIter)
+        point.iterate(maxIter)
         true
       }
     }
@@ -317,7 +315,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
       // It handles any Point
       override def updatePoint(point: Point): Boolean = {
         if (point.location == Unsettled) {
-          if (point.iter == 0 && preCheck_isInside(point.complexValue)) {
+          if (point.iter == 0 && point.complexValue.preCheck_isInside) {
             point.location = Inside
             true
           }
@@ -326,14 +324,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
         else firstStart
       }
 
-      /** Optimization: Cardioid / bulb checking
-        * from http://en.wikipedia.org/wiki/Mandelbrot_set#Cardioid_.2F_bulb_checking
-        */
-      private def preCheck_isInside(c: Complex): Boolean = {
-        val q = pow(c.re - 0.25, 2) + pow(c.im, 2)
-        q * (q + (c.re - 0.25)) < pow(c.im, 2) / 4 ||
-          pow(c.re + 1, 2) + pow(c.im, 2) < 0.0625
-      }
+
     }
 
     class EmptyUpdater(val cycle: IterationCycle) extends Updater {
@@ -354,37 +345,6 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
   }
 
 }
-
-object Calculator {
-
-  /**
-   * Performs the mandelbrot iteration on one point to the specified maxIteration. It expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
-   * @param point to update
-   */
-  def iterate(point: Point, maxIter: Int): Unit = {
-    val z = point.iterValue
-    val c = point.complexValue
-    @tailrec def loop(iter: Int): Unit = {
-      z * z + c
-      val escaped = z.escaped
-      if (iter == maxIter || escaped) {
-        point.iter = iter
-        if (escaped) point.location = Outside(iter)
-      }
-      else loop(iter + 1)
-    }
-    if (point.iter < maxIter) loop(point.iter + 1)
-  }
-
-
-
-  implicit class ComplexOps(c: Complex) {
-
-    def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
-  }
-
-}
-
 
 
 

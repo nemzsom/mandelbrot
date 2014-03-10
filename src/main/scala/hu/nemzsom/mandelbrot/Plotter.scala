@@ -1,8 +1,6 @@
 package hu.nemzsom.mandelbrot
 
 import java.awt.image.{DataBufferInt, BufferedImage}
-import com.typesafe.scalalogging.slf4j.Logger
-import org.slf4j.LoggerFactory
 import scala.annotation.tailrec
 
 trait Plotter {

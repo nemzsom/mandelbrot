@@ -5,7 +5,7 @@ import rx.lang.scala.Subscription
 import scala.concurrent.duration.Duration
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
 
-case class CalcPTest(width: Int, height: Int, topLeft: Complex, mathHeight: Double, maxIter: Int, times: Int) extends PerformanceTestSpec
+case class CalcPTest(width: Int, height: Int, topLeft: ComplexWithDouble, mathHeight: Double, maxIter: Int, times: Int) extends PerformanceTestSpec
 
 class CalculatorPTester(threads: Int) extends PerformanceTester[CalcPTest] {
 
@@ -13,7 +13,7 @@ class CalculatorPTester(threads: Int) extends PerformanceTester[CalcPTest] {
   implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
 
   override def work(spec: CalcPTest): Long = {
-    val area = Area(spec.topLeft, spec.mathHeight / (spec.height - 1), spec.width, spec.height)
+    val area = Area(spec.topLeft, Scale(spec.mathHeight / (spec.height - 1)), spec.width, spec.height)
     val calculator = new Calculator(area, Mock.Plotter)
     val p = promise[Unit]()
     val done = p.future

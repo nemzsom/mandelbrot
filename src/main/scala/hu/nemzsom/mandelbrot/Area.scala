@@ -1,5 +1,7 @@
 package hu.nemzsom.mandelbrot
 
+import scala.annotation.tailrec
+
 sealed trait PointLoc
 
 /** Point is inside the mandelbrot set */
@@ -11,16 +13,35 @@ case class Outside(iter: Int) extends PointLoc
 
 class Point(val complexValue: Complex, var index: Int) {
 
+  type T = complexValue.type
+
   var iter = 0
-  var iterValue = Complex(0)
+  var iterValue = complexValue.zero
   var location: PointLoc = Unsettled
+
+  /**
+   * Performs the mandelbrot iteration on one point to the specified maxIteration. It expects only [[hu.nemzsom.mandelbrot.Unsettled]] points
+   */
+  def iterate(maxIter: Int): Unit = {
+    @tailrec def loop(i: Int): Unit = {
+      iterValue.times(iterValue)
+      iterValue.plus(complexValue)
+      val escaped = iterValue.escaped
+      if (i == maxIter || escaped) {
+        iter = i
+        if (escaped) location = Outside(iter)
+      }
+      else loop(i + 1)
+    }
+    if (iter < maxIter) loop(iter + 1)
+  }
 
   override def toString: String = {
     s"Point(complexValue: $complexValue, iter: $iter, iterValue: $iterValue, loc: $location, index: $index)"
   }
 }
 
-class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) extends Traversable[Point] {
+class Area(val scale: Scale, val data: Array[Point], val lineStride: Int, val startAt: Int, val width: Int, val height: Int) extends Traversable[Point] {
 
   lazy val topLeft: Point = data(startAt)
 
@@ -69,7 +90,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
   def resize(newWidth: Int, newHeight: Int): Area = {
     val newSize = newWidth * newHeight
     val newData = new Array[Point](newSize)
-    val tlC = topLeft.complexValue
+    val tlC= topLeft.complexValue
     var i = 0
     for {
       y <- 0 until newHeight
@@ -81,7 +102,7 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
           p.index = i // sets the new index
           p
         }
-        else new Point(Complex(y * scale + tlC.re, x * scale + tlC.im), i)
+        else new Point(tlC.diff(y, x, scale), i)
       }
       i += 1
     }
@@ -104,26 +125,25 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
           p.index = i // sets the new index
           p
         }
-        else new Point(Complex(oldY * scale + tlC.re, oldX * scale + tlC.im), i)
+        else new Point(tlC.diff(oldY, oldX, scale), i)
       }
       i += 1
     }
     new Area(scale, newData, width, 0, width, height)
   }
 
+  // TODO switch between numeric representation when needed
   def zoom(factor: Double, at: (Int, Int)): Area = {
     val (x, y) = at
     val complexAt = pointAt(x, y).complexValue
     val newScale = scale / factor
-    val topLeftComplex = complexAt - Complex(newScale * y, newScale * x)
+    val topLeftComplex = complexAt.diff(-y, -x, newScale)
     Area(topLeftComplex, newScale, width, height)
   }
 
-  def mathematicalWidth: Double =
-    pointAt(width - 1, 0).complexValue.im - topLeft.complexValue.im
+  def mathematicalWidth: Double = (width - 1) * scale.asDouble
 
-  def mathematicalHeight: Double =
-    pointAt(0, height - 1).complexValue.re - topLeft.complexValue.re
+  def mathematicalHeight: Double = (height - 1) * scale.asDouble
 
   override def size: Int = width * height
 
@@ -132,11 +152,11 @@ class Area(val scale: Double, val data: Array[Point], val lineStride: Int, val s
 
 object Area {
 
-  def onePoint(complexValue: Complex, scale: Double): Area = {
+  def onePoint(complexValue: Complex, scale: Scale): Area = {
     new Area(scale, Array(new Point(complexValue, 0)), 1, 0, 1, 1)
   }
 
-  def apply(topLeftComp: Complex, scale: Double, width: Int, height: Int): Area =
+  def apply(topLeftComp: Complex, scale: Scale, width: Int, height: Int): Area =
     onePoint(topLeftComp, scale).resize(width, height)
 }
 

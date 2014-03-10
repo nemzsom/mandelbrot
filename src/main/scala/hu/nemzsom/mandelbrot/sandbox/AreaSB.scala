@@ -4,7 +4,7 @@ import scala.swing.Swing._
 import scala.swing.{Component, MainFrame, Panel, SimpleSwingApplication}
 import java.awt.{Color, Graphics2D}
 import java.awt.image.{DataBufferInt, BufferedImage}
-import hu.nemzsom.mandelbrot.{Complex, Area}
+import hu.nemzsom.mandelbrot.{Scale, Complex, Area}
 import scala.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ThreadPoolExecutor, Executors}
@@ -22,7 +22,7 @@ object AreaSB extends SimpleSwingApplication {
     val databuffer: DataBufferInt = raster.getDataBuffer.asInstanceOf[DataBufferInt]
     val pixelData = databuffer.getData
 
-    val area = Area(Complex(0, 0), 1, width, height)
+    val area = Area(Complex(0, 0), Scale(1), width, height)
     val areaData = area.data
 
     val colors = new Array[Int](256)
@@ -119,7 +119,7 @@ object AreaSB extends SimpleSwingApplication {
       runOnStart
       area foreach { point =>
         val comp = point.complexValue
-        point.iter = (255 * (comp.re + comp.im).toInt / (width + height) + step) % 255
+        point.iter = (255 * (comp.re_asDouble + comp.im_asDouble).toInt / (width + height) + step) % 255
       }
     }
   }

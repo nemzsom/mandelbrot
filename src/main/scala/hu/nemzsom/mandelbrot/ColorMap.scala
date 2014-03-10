@@ -160,8 +160,8 @@ trait SmoothColorMap extends ColorMap {
     Option(new ColorMap {
       override def color(point: Point): Int = point.location match {
         case Outside(iter) =>
-          if (iter > point.iter) Calculator.iterate(point, iter)
-          val smoothIter = iter + 1 - Math.log(Math.log(!point.iterValue)) / Math.log(2)
+          if (iter > point.iter) point.iterate(iter)
+          val smoothIter = iter + 1 - Math.log(Math.log(point.iterValue.modulo)) / Math.log(2)
           map((Math.max(0, smoothIter) % nOfColors).toFloat / nOfColors)
         case _ => 0 // Inside or Unsettled
       }
