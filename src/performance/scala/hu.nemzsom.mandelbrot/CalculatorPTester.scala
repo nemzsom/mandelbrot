@@ -4,6 +4,7 @@ import scala.concurrent._
 import rx.lang.scala.Subscription
 import scala.concurrent.duration.Duration
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
+import scala.compat.Platform
 
 case class CalcPTest(width: Int, height: Int, topLeft: Complex, mathHeight: Double, maxIter: Int, times: Int) extends PerformanceTestSpec
 
@@ -46,13 +47,14 @@ object CalculatorPTester extends App {
     CalcPTest(640, 480, Complex(-2, -1.65), 2.5, 1000, 100) -> (1 to 8),
     CalcPTest(640, 480, Complex(-1.4048486487084642, -3.546832668775599E-10), 5.092590793509544E-10, 25000, 5) -> 4,
     CalcPTest(1920, 1080, Complex(-0.2281555005217314, -1.115142415586574), 5.69794211813246E-13, 80, 50) -> 4,
-    CalcPTest(640, 480, Complex(BigDecimal(-2), BigDecimal(-1.65)), 2.5, 1000, 10) -> 4
+    CalcPTest(640, 480, Complex(BigDecimal(-2), BigDecimal(-1.65)), 2.5, 1000, 5) -> 4
   )
 
   testCases foreach { case (spec, threadRanges) =>
     threadRanges foreach { threads =>
       print(s"With $threads threads - ")
       new CalculatorPTester(threads).measure(spec)
+      Platform.collectGarbage()
     }
   }
 

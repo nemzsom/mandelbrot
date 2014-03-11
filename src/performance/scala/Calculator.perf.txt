@@ -4,40 +4,44 @@ __________________________________________________________
 
 With 1 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 191 ms (min: 182, max: 224) [total: 19116]
+average: 180 ms (min: 170, max: 232) [total: 18013]
 
 With 2 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 107 ms (min: 99, max: 130) [total: 10781]
+average: 102 ms (min: 95, max: 125) [total: 10274]
 
 With 3 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 83 ms (min: 79, max: 103) [total: 8347]
+average: 82 ms (min: 77, max: 101) [total: 8226]
 
 With 4 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 72 ms (min: 68, max: 98) [total: 7227]
+average: 70 ms (min: 65, max: 94) [total: 7072]
 
 With 5 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 75 ms (min: 70, max: 96) [total: 7507]
+average: 73 ms (min: 68, max: 97) [total: 7365]
 
 With 6 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 75 ms (min: 71, max: 95) [total: 7553]
+average: 73 ms (min: 68, max: 103) [total: 7378]
 
 With 7 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 75 ms (min: 71, max: 95) [total: 7550]
+average: 71 ms (min: 67, max: 92) [total: 7176]
 
 With 8 threads - Measure for CalcPTest(640,480,-2.0-1.65*i,2.5,1000,100)
 ---------------------------------------------------------------
-average: 76 ms (min: 72, max: 99) [total: 7694]
+average: 73 ms (min: 68, max: 95) [total: 7318]
 
 With 4 threads - Measure for CalcPTest(640,480,-1.4048486487084642-3.546832668775599E-10*i,5.092590793509544E-10,25000,5)
 ---------------------------------------------------------------
-average: 4835 ms (min: 4825, max: 4855) [total: 24177]
+average: 3944 ms (min: 3922, max: 3974) [total: 19720]
 
 With 4 threads - Measure for CalcPTest(1920,1080,-0.2281555005217314-1.115142415586574*i,5.69794211813246E-13,80,50)
 ---------------------------------------------------------------
-average: 1165 ms (min: 440, max: 1984) [total: 58288]
+average: 1057 ms (min: 413, max: 1958) [total: 52884]
+
+With 4 threads - Measure for CalcPTest(640,480,-2-1.65*i,2.5,1000,5) !!BigDecimal (default mathContext)!!
+---------------------------------------------------------------
+average: 8635 ms (min: 8352, max: 8751) [total: 43178]
