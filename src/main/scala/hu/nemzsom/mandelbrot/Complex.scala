@@ -62,8 +62,6 @@ sealed trait Complex {
   * mutable version for performance
  */
 class ComplexWithDouble(private var re: Double, private var im: Double) extends Complex {
-  
-  import Complex.ComplexWithDouble.ZERO
 
   // Constructors
   def this(re: Double) = this(re, 0)
@@ -76,7 +74,7 @@ class ComplexWithDouble(private var re: Double, private var im: Double) extends 
 
   override def copy = new ComplexWithDouble(re, im)
 
-  override def zero = ZERO
+  override def zero = new ComplexWithDouble(0)
 
   override def escaped: Boolean = re * re + im * im > 2 * 2
 
@@ -227,13 +225,6 @@ object Complex {
 
   def apply(re: BigDecimal) = new ComplexWithBigDecimal(re)
   def apply(re: BigDecimal, im: BigDecimal) = new ComplexWithBigDecimal(re, im)
-
-
-  object ComplexWithDouble {
-
-    val ZERO = new ComplexWithDouble(0)
-  }
-
 
   object ComplexWithBigDecimal {
 

@@ -43,7 +43,8 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
     }
   })
 
-  var calculation = startNewCalculation(Area(Complex(BigDecimal(-2), BigDecimal(-1.65)), Scale(2.5 / (panel.image.getHeight - 1)), panel.image.getWidth, panel.image.getHeight))
+  //var calculation = startNewCalculation(Area(Complex(BigDecimal(-2), BigDecimal(-1.65)), Scale(2.5 / (panel.image.getHeight - 1)), panel.image.getWidth, panel.image.getHeight))
+  var calculation = startNewCalculation(Area(Complex(-2, -1.65), Scale(2.5 / (panel.image.getHeight - 1)), panel.image.getWidth, panel.image.getHeight))
 
 
   panel.resized.subscribe {
