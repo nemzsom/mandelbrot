@@ -24,6 +24,16 @@ class ScaleAsDouble(s: Double) extends Scale {
   override val asDouble: Double = s
 }
 
+class ScaleAsBigDecimal(s: BigDecimal) extends Scale {
+
+  // TODO switch to Double when can
+  override def /(factor: Double): Scale = new ScaleAsBigDecimal(s / factor)
+
+  override lazy val asBigDec: BigDecimal =s
+
+  override val asDouble: Double = s.toDouble
+}
+
 sealed trait Complex {
 
   def re_asDouble: Double
@@ -52,6 +62,8 @@ sealed trait Complex {
   * mutable version for performance
  */
 class ComplexWithDouble(private var re: Double, private var im: Double) extends Complex {
+  
+  import Complex.ComplexWithDouble.ZERO
 
   // Constructors
   def this(re: Double) = this(re, 0)
@@ -64,7 +76,7 @@ class ComplexWithDouble(private var re: Double, private var im: Double) extends 
 
   override def copy = new ComplexWithDouble(re, im)
 
-  override def zero = ComplexWithDouble.ZERO
+  override def zero = ZERO
 
   override def escaped: Boolean = re * re + im * im > 2 * 2
 
@@ -77,64 +89,24 @@ class ComplexWithDouble(private var re: Double, private var im: Double) extends 
       pow(re + 1, 2) + pow(im, 2) < 0.0625
   }
 
-  // Unary operators
-  //def unary_+ = this
-  /*def unary_- = {
-    re = -re
-    im = -im
-    this
-  }*/
-  /*def unary_~ = { // conjugate
-    im = -im
-    this
-  }*/
-  //def unary_! = sqrt(pow(re, 2) + pow(im, 2)) // modulo
   override def modulo = sqrt(pow(re, 2) + pow(im, 2))
 
-  // Comparison
-  //def compare(that: ComplexWithDouble) = !this compare !that
-
-  // Arithmetic operations
-  /*def +(c: ComplexWithDouble) = {
-    re = re + c.re
-    im = im + c.im
-    this
-  }*/
   override def plus(c: Complex): Unit = {
     re = re + c.re_asDouble
     im = im + c.im_asDouble
   }
+
   override def minus(c: Complex): Unit = {
     re = re - c.re_asDouble
     im = im - c.im_asDouble
   }
-  /*def -(c: ComplexWithDouble) = {
-    re = re - c.re
-    im = im - c.im
-    this
-  }*/
-  /*def *(c: ComplexWithDouble) = {
-    val newRe = re * c.re - im * c.im
-    val newIm = im * c.re + re * c.im
-    re = newRe
-    im = newIm
-    this
-  }*/
+
   override def times(c: Complex): Unit = {
     val newRe = re * c.re_asDouble - im * c.im_asDouble
     val newIm = im * c.re_asDouble + re * c.im_asDouble
     re = newRe
     im = newIm
   }
-  /*def /(c: ComplexWithDouble) = {
-    require(c.re != 0 || c.im != 0)
-    val d = pow(c.re, 2) + pow(c.im, 2)
-    val newRe = (re * c.re + im * c.im) / d
-    val newIm = (im * c.re - re * c.im) / d
-    re = newRe
-    im = newIm
-    this
-  }*/
 
   override def diff(diffRe: Int, diffIm: Int, scale: Scale): ComplexWithDouble = {
     new ComplexWithDouble(diffRe * scale.asDouble + re, diffIm * scale.asDouble + im)
@@ -168,16 +140,110 @@ class ComplexWithDouble(private var re: Double, private var im: Double) extends 
     re + (if (im < 0) "-" + -im else "+" + im) + "*i"
 }
 
-object ComplexWithDouble {
+class ComplexWithBigDecimal(private var re: BigDecimal, private var im: BigDecimal) extends Complex {
 
-  def ZERO = new ComplexWithDouble(0)
+  import Complex.ComplexWithBigDecimal._
+  // Constructors
+  def this(re: BigDecimal) = this(re, 0)
+
+  def re_asDouble = re.toDouble
+  def im_asDouble = im.toDouble
+
+  def re_asBigDec = re
+  def im_asBigDec = im
+
+  override def copy = new ComplexWithBigDecimal(re, im)
+
+  override def zero = new ComplexWithBigDecimal(0)
+
+  override def escaped: Boolean = re * re + im * im > FOUR_BIGDEC
+
+  /** Optimization: Cardioid / bulb checking
+    * from http://en.wikipedia.org/wiki/Mandelbrot_set#Cardioid_.2F_bulb_checking
+    */
+  override def preCheck_isInside: Boolean = {
+    val reAsDouble = re_asDouble
+    val imAsDouble = im_asDouble
+    val q = pow(reAsDouble - 0.25, 2) + pow(imAsDouble, 2)
+    q * (q + (reAsDouble - 0.25)) < pow(imAsDouble, 2) / 4 ||
+      pow(reAsDouble + 1, 2) + pow(imAsDouble, 2) < 0.0625
+  }
+
+  override def modulo = sqrt(pow(re_asDouble, 2) + pow(im_asDouble, 2)) // TODO test with smooth coloring
+
+  override def plus(c: Complex): Unit = {
+    re = re + c.re_asBigDec
+    im = im + c.im_asBigDec
+  }
+
+  override def minus(c: Complex): Unit = {
+    re = re - c.re_asBigDec
+    im = im - c.im_asBigDec
+  }
+
+  override def times(c: Complex): Unit = {
+    val newRe = re * c.re_asBigDec - im * c.im_asBigDec
+    val newIm = im * c.re_asBigDec + re * c.im_asBigDec
+    re = newRe
+    im = newIm
+  }
+
+  override def diff(diffRe: Int, diffIm: Int, scale: Scale): ComplexWithBigDecimal = {
+    new ComplexWithBigDecimal(diffRe * scale.asBigDec + re, diffIm * scale.asBigDec + im)
+  }
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[ComplexWithBigDecimal]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ComplexWithDouble =>
+      (that canEqual this) &&
+        re == that.re_asBigDec &&
+        im == that.im_asBigDec
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(re, im)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+
+  // String representation
+  override def toString: String =
+    (re, im) match {
+      case (ZERO_BIGDEC, ONE_BIGDEC) => "i"
+      case (real, ZERO_BIGDEC) => real.toString()
+      case (ZERO_BIGDEC, imag) => imag.toString() + "*i"
+      case _ => asString
+    }
+
+  private def asString =
+    re.toString + (if (im < 0) "-" + -im else "+" + im) + "*i"
 }
 
 object Complex {
 
-  def apply(re: Double): ComplexWithDouble = new ComplexWithDouble(re)
-  def apply(re: Double, im: Double): ComplexWithDouble = new ComplexWithDouble(re, im)
+  def apply(re: Double) = new ComplexWithDouble(re)
+  def apply(re: Double, im: Double) = new ComplexWithDouble(re, im)
 
-  // TODO applys for BigDec
+  def apply(re: BigDecimal) = new ComplexWithBigDecimal(re)
+  def apply(re: BigDecimal, im: BigDecimal) = new ComplexWithBigDecimal(re, im)
+
+
+  object ComplexWithDouble {
+
+    val ZERO = new ComplexWithDouble(0)
+  }
+
+
+  object ComplexWithBigDecimal {
+
+    val FOUR_BIGDEC = BigDecimal(4)
+
+    val ZERO_BIGDEC = BigDecimal(0)
+
+    val ONE_BIGDEC = BigDecimal(1)
+
+
+  }
 
 }
