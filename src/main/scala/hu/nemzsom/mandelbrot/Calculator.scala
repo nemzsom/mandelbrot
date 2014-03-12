@@ -16,7 +16,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
 
   object Config {
     val maxDividableSize = 14
-    val iterationStep = 10
+    val iterationStep = 10 // TODO dynamic iterationStep
   }
 
   import Config._
@@ -267,36 +267,39 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
       val hasPoints = true
 
       def update(): Future[Updater] = future {
-        // debug BEGIN
-        //              logger.trace(s"UPDATE at $cycle")
-        //              points.foreach ( point => debugPixels(point.index) = 255 << 16 )
-        //              debugPanel.repaint()
-        //              debugQuene.take
-        // debug END
-        var total = 0
-        var settled = 0
-        var unsettledPoints = List.empty[Point]
-        points.foreach {
-          point =>
-            if (updatePoint(point)) {
-              total += 1
-              if (point.location == Unsettled) {
-                unsettledPoints = point :: unsettledPoints
+        if (subscription.isUnsubscribed) empty(cycle.next)
+        else {
+          // debug BEGIN
+          //              logger.trace(s"UPDATE at $cycle")
+          //              points.foreach ( point => debugPixels(point.index) = 255 << 16 )
+          //              debugPanel.repaint()
+          //              debugQuene.take
+          // debug END
+          var total = 0
+          var settled = 0
+          var unsettledPoints = List.empty[Point]
+          points.foreach {
+            point =>
+              if (updatePoint(point)) {
+                total += 1
+                if (point.location == Unsettled) {
+                  unsettledPoints = point :: unsettledPoints
+                }
+                else {
+                  settled += 1
+                  plotter.plot(point)
+                }
               }
-              else {
-                settled += 1
-                plotter.plot(point)
-              }
-            }
+          }
+          // debug BEGIN
+          //              points foreach plotter.plot
+          //              logger.trace(s"DONE at $cycle. total: $total, settled: $settled")
+          //              debugPanel.repaint()
+          // debug END
+          cycle.updated(total, settled)
+          if (total == settled) empty(cycle.next)
+          else new CalcUpdater(unsettledPoints, cycle.next)
         }
-        // debug BEGIN
-        //              points foreach plotter.plot
-        //              logger.trace(s"DONE at $cycle. total: $total, settled: $settled")
-        //              debugPanel.repaint()
-        // debug END
-        cycle.updated(total, settled)
-        if (total == settled) empty(cycle.next)
-        else new CalcUpdater(unsettledPoints, cycle.next)
       }
 
       /**

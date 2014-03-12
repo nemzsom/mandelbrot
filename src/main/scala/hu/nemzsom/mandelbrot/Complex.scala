@@ -22,6 +22,8 @@ class ScaleAsDouble(s: Double) extends Scale {
   override lazy val asBigDec: BigDecimal = BigDecimal(s)
 
   override val asDouble: Double = s
+
+  override def toString: String = s"DoubleScale[$s]"
 }
 
 class ScaleAsBigDecimal(s: BigDecimal) extends Scale {
@@ -32,6 +34,8 @@ class ScaleAsBigDecimal(s: BigDecimal) extends Scale {
   override lazy val asBigDec: BigDecimal =s
 
   override val asDouble: Double = s.toDouble
+
+  override def toString: String = s"BigDecScale[$s, - prec: ${s.mc.getPrecision}, scale: ${s.scale}}]"
 }
 
 sealed trait Complex {
@@ -187,7 +191,9 @@ class ComplexWithBigDecimal(private var re: BigDecimal, private var im: BigDecim
   }
 
   override def diff(diffRe: Int, diffIm: Int, scale: Scale): ComplexWithBigDecimal = {
-    new ComplexWithBigDecimal(diffRe * scale.asBigDec + re, diffIm * scale.asBigDec + im)
+    val newRe = re.bigDecimal.add(scale.asBigDec.bigDecimal.multiply(BigDecimal(diffRe).bigDecimal), re.mc)
+    val newIm = im.bigDecimal.add(scale.asBigDec.bigDecimal.multiply(BigDecimal(diffIm).bigDecimal), im.mc)
+    new ComplexWithBigDecimal(BigDecimal(newRe, re.mc), BigDecimal(newIm, im.mc))
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[ComplexWithBigDecimal]
@@ -233,7 +239,6 @@ object Complex {
     val ZERO_BIGDEC = BigDecimal(0)
 
     val ONE_BIGDEC = BigDecimal(1)
-
 
   }
 

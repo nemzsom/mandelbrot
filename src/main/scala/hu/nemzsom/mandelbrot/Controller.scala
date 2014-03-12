@@ -12,6 +12,7 @@ import javax.swing.Timer
 import java.awt.event.{InputEvent, ActionEvent, ActionListener}
 import scala.util.{Success, Failure}
 import scala.swing.event.{Key, KeyPressed}
+import java.math.MathContext
 
 sealed trait UIRequest
 
@@ -22,6 +23,8 @@ case class Drag(diffX: Int, diffY: Int) extends UIRequest
 case class Zoom(rotation: Int, at: (Int, Int)) extends UIRequest
 
 case class ChangeColor(indexDiff: Int, colorCountDiff: Int) extends UIRequest
+
+case class TMPChangeNumFormat(precDiff: Int) extends UIRequest
 
 class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
 
@@ -38,7 +41,6 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
   var cleanNeeded = new AtomicBoolean(false)
   val repaintTimer = new Timer(1000 / 10, new ActionListener {
     override def actionPerformed(e: ActionEvent): Unit = {
-      logger.debug("repaint")
       panel.repaint()
     }
   })
@@ -79,6 +81,13 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
       }
       else {
         onRequest(ChangeColor(1, 0))
+      }
+    case KeyPressed(_, Key.N, modifiers, _) =>
+      if ((modifiers & InputEvent.CTRL_DOWN_MASK) != 0) {
+        onRequest(TMPChangeNumFormat(-2))
+      }
+      else {
+        onRequest(TMPChangeNumFormat(2))
       }
     case _ =>
   })
@@ -126,6 +135,14 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
           Math.max(2, newColorCount)
         }
         colorMap = colorMaps(colorIndex)(colorCount)
+      case TMPChangeNumFormat(precDiff) =>
+        val tlC = area.topLeft.complexValue
+        val newPrec = (tlC match {
+          case _: ComplexWithDouble => 15
+          case cBD: ComplexWithBigDecimal => cBD.re_asBigDec.mc.getPrecision
+        }) + precDiff
+        val newTlC = Complex(tlC.re_asBigDec(new MathContext(newPrec)), tlC.im_asBigDec(new MathContext(newPrec)))
+        area = Area(newTlC, area.scale, area.width, area.height)
     }
     debugTime = (System.nanoTime - debugTime) / 1000000
     if (debugTime > 200) {
