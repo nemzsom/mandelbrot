@@ -379,7 +379,9 @@ object Calculator {
 
   implicit class ComplexOps(c: Complex) {
 
-    def escaped: Boolean = c.re * c.re + c.im * c.im > 2 * 2
+    val bailOutRadius = 2
+
+    def escaped: Boolean = c.re * c.re + c.im * c.im > bailOutRadius * bailOutRadius
   }
 
 }

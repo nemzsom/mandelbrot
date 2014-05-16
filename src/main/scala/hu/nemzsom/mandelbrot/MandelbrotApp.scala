@@ -28,7 +28,10 @@ object MandelbrotApp extends SimpleSwingApplication {
 
   // DEBUG
   panel.reactions += {
-    case e: MousePressed => println(s"clicked: ${e.point}")
+    case e: MousePressed =>
+      val p = e.point
+      println(s"clicked: $p, ${controller.calculation.area.pointAt(p.x, p.y)}")
+
     case KeyPressed(_, Key.Space, _, _) => debugQuene.put(0)
     case KeyPressed(_, Key.I, _, _) =>
       println("--------------- INFO -----------------")
