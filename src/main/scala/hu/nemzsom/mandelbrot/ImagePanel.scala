@@ -47,7 +47,7 @@ class ImagePanel(initialWidth: Int, initialHeight: Int) extends Panel {
           val diffX = e.point.x - draggedFrom.x
           val diffY = e.point.y - draggedFrom.y
           draggedFrom = e.point
-          observer.onNext(diffX, diffY)
+          observer.onNext((diffX, diffY))
       }
     )
   }

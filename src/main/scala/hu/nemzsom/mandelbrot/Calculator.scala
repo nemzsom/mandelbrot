@@ -268,7 +268,7 @@ class Calculator(val mainArea: Area, val plotter: Plotter)(implicit ec: Executio
 
       val hasPoints = true
 
-      def update(): Future[Updater] = future {
+      def update(): Future[Updater] = Future {
         // debug BEGIN
         //              logger.trace(s"UPDATE at $cycle")
         //              points.foreach ( point => debugPixels(point.index) = 255 << 16 )

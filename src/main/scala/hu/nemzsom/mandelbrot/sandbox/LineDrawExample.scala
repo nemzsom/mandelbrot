@@ -30,7 +30,7 @@ object LineDrawExample extends SimpleSwingApplication {
       case _: FocusLost => repaint()
     }
 
-    def lineTo(p: java.awt.Point) {
+    def lineTo(p: java.awt.Point): Unit = {
       val graphics = bufferedImage.createGraphics()
       graphics.setColor(Color.black)
       graphics.drawLine(actPoint.x, actPoint.y, p.x, p.y)
@@ -38,7 +38,7 @@ object LineDrawExample extends SimpleSwingApplication {
       repaint()
     }
 
-    def moveTo(p: java.awt.Point) {
+    def moveTo(p: java.awt.Point): Unit = {
       actPoint = p
     }
 

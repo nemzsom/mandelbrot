@@ -46,7 +46,7 @@ class AreaTest extends FunSuite {
     new TestArea {
       for (x <- 0 until area.width; y <- 0 until area.height) {
         val point = area.pointAt(x, y)
-        assert(point.complexValue === Complex(y, x))
+        assert(point.complexValue === Complex(y.toDouble, x.toDouble))
       }
     }
   }
@@ -169,7 +169,7 @@ class AreaTest extends FunSuite {
         x <- 0 until newWidth
       } {
         val p = resized.pointAt(x, y)
-        assert(p.complexValue == Complex(y, x))
+        assert(p.complexValue == Complex(y.toDouble, x.toDouble))
         assert(p.index === i)
         i += 1
       }

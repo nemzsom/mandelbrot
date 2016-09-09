@@ -115,7 +115,7 @@ object AreaSB extends SimpleSwingApplication {
       }
     }
 
-    def updateArea(step: Int, area: Area, runOnStart: => Unit): Unit = future {
+    def updateArea(step: Int, area: Area, runOnStart: => Unit): Unit = Future {
       runOnStart
       area foreach { point =>
         val comp = point.complexValue

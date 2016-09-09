@@ -1,6 +1,7 @@
 package hu.nemzsom.mandelbrot
 
 import scala.math._
+import scala.language.implicitConversions
 
 /** from http://www.stoyanr.com/2013/02/complex-numbers-in-scala.html 
  */
@@ -51,8 +52,8 @@ object Complex {
 
   // Implicit conversions
   implicit def fromDouble(d: Double) = new Complex(d)
-  implicit def fromFloat(f: Float) = new Complex(f)
-  implicit def fromLong(l: Long) = new Complex(l)
-  implicit def fromInt(i: Int) = new Complex(i)
-  implicit def fromShort(s: Short) = new Complex(s)
+  implicit def fromFloat(f: Float) = new Complex(f.toDouble)
+  implicit def fromLong(l: Long) = new Complex(l.toDouble)
+  implicit def fromInt(i: Int) = new Complex(i.toDouble)
+  implicit def fromShort(s: Short) = new Complex(s.toDouble)
 }

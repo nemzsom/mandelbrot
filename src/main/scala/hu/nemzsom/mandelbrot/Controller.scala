@@ -109,7 +109,7 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
         panel.moveImage(diffX, diffY)
       case Zoom(rotation, at) =>
         logger.debug(s"process zoom for rotation $rotation at $at")
-        val factor = Math.pow(1.25, -rotation)
+        val factor = Math.pow(1.25, -rotation.toDouble)
         area = area.zoom(factor, at)
         panel.zoomImage(factor, at)
         cleanNeeded.set(true)
@@ -191,7 +191,7 @@ class Controller(panel: ImagePanel, val colorMaps: Array[Int => ColorMap]) {
     @volatile var running = true
     @volatile var cancel = false
 
-    val f: Future[Unit] = future {
+    val f: Future[Unit] = Future {
       plotter.finish(area, () => cancel)
       if (!cancel) panel.repaint()
     }

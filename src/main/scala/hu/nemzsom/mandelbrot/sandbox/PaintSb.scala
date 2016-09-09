@@ -26,7 +26,7 @@ object PaintSb extends SimpleSwingApplication {
       g.drawImage(bufferedImage, 0, 0, bufferedImage.getWidth, bufferedImage.getHeight, null)
     }
     
-    future {
+    Future {
       Thread.sleep(2000)
       for (i <- pixelData.indices) (pixelData(i) = 255)
 

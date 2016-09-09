@@ -50,10 +50,10 @@ abstract class ContinuousColorMap(colorMarks: List[ColorMark]) extends ColorMap 
     def interpolate(from: Float, to: Float): Float = from + (to - from) * diff / cInterval
     val hue =
       if (Math.abs(cm1.hue - cm2.hue) > 180) {
-        if (cm2.hue > cm1.hue) interpolate(cm1.hue + 360, cm2.hue)
-        else interpolate(cm1.hue, cm2.hue + 360)
+        if (cm2.hue > cm1.hue) interpolate((cm1.hue + 360).toFloat, cm2.hue.toFloat)
+        else interpolate(cm1.hue.toFloat, (cm2.hue + 360).toFloat)
       }
-      else interpolate(cm1.hue, cm2.hue)
+      else interpolate(cm1.hue.toFloat, cm2.hue.toFloat)
     val sat = interpolate(cm1.saturation, cm2.saturation)
     val bri = interpolate(cm1.brightness, cm2.brightness)
     Color.HSBtoRGB(hue / 360f, sat, bri)
